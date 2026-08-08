@@ -1,0 +1,296 @@
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <title>Consensus and State Machine Replication &ndash; Distributed Systems: Principles and Practice</title>
+
+    
+
+    <!-- Polyfill (fakes modern web APIs on older browsers; load first) -->
+    <script src="/book/third-party/polyfill/js/polyfill.min.js"></script>
+
+    <link rel="stylesheet" type="text/css" href="/book/third-party/normalize/normalize.css">
+
+    <!-- Fonts -->
+    <link rel="stylesheet" type="text/css" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:400,400italic,600">
+    <link rel="stylesheet" type="text/css" href="https://fonts.googleapis.com/css?family=Inconsolata:400,700">
+    <link rel="stylesheet" type="text/css" href="/book/third-party/fontawesome/css/all.min.css">
+
+    <!-- jQuery -->
+    <script src="/book/third-party/jquery/js/jquery.min.js"></script>
+
+    <!-- Highlight -->
+    <link rel="stylesheet" type="text/css" href="/book/third-party/highlight/css/highlight-default.css">
+
+    <!-- SVG -->
+    <script src="/book/third-party/svg/js/svg.min.js"></script>
+
+    <!-- MathJax -->
+    <script>
+      window.MathJax = {
+        tex: {
+          // Allow $ to delimit math mode, to make the behavior inside and outside markdown blocks
+          // the same.
+          inlineMath: [['$', '$'], ['\\(', '\\)']]
+        }
+      };
+    </script>
+    <script src="/book/third-party/mathjax/tex-chtml.js"></script>
+
+    <!-- First-party static resources -->
+    <script src="/book/js/main.js"></script>
+    <script src="/book/js/jrw-svg.js"></script>
+    <script src="/book/js/trace-visualization.js"></script>
+    <script src="/book/js/notes.js"></script>
+
+    <link rel="stylesheet" type="text/css" href="/book/css/main.css">
+
+    
+  </head>
+
+  
+  
+
+  <body>
+    <div id="wrapper">
+      <nav id="sidebar"><ol start="0">
+        
+        
+          
+            
+          
+            <a href="/book/preface.html">
+          
+          <li>Preface</li>
+          
+            </a>
+            
+          
+        
+          
+        
+          
+            
+          
+            <a href="/book/01-intro.html">
+          
+          <li>Introduction</li>
+          
+            </a>
+            
+          
+        
+          
+        
+          
+            
+          
+            <a href="/book/02-foundations.html">
+          
+          <li>Foundations</li>
+          
+            </a>
+            
+          
+        
+          
+        
+          
+            
+          
+            <a href="/book/rpc.html">
+          
+          <li>Remote Procedure Call</li>
+          
+            </a>
+            
+          
+        
+          
+        
+          
+            
+          
+            <a href="/book/primary-backup.html">
+          
+          <li>Primary-Backup Replication</li>
+          
+            </a>
+            
+          
+        
+          
+        
+          
+            <div class="sidebar-section">
+            <span class="sidebar-section-header">Consensus</span>
+            
+              
+          
+            <a href="/book/distributed-objects.html">
+          
+          <li>Distributed Objects</li>
+          
+            </a>
+            
+          
+        
+            
+              
+          
+            <a href="/book/consensus.html">
+          
+          <li>Consensus and State Machine Replication</li>
+          
+            </a>
+            
+              <div class="toc">
+<ul>
+<li><a href="#state-machine-replication-from-consensus">State Machine Replication from Consensus</a></li>
+</ul>
+</div>
+
+            
+          
+        
+            
+            </div>
+          
+        
+          
+            
+          
+            <a href="/book/glossary.html">
+          
+          <li>Glossary</li>
+          
+            </a>
+            
+          
+        
+          
+        
+        
+          
+          
+            <a href="/book/style-guide.html">
+          
+          <li>Style Guide</li>
+          
+            </a>
+            
+          
+        
+        
+      </ol></nav>
+      <div id="main-column">
+        <header id="top-bar">
+          <i class="fa-solid fa-bars" id="sidebar-button"></i>
+          <h1 class="book-title"><a href="/book/">Distributed Systems: Principles and Practice</a></h1>
+        </header>
+        <div id="content">
+          <h1>Consensus and State Machine Replication</h1>
+          
+          
+  
+<p>In this chapter we will introduce the core problem of this section &ndash; <strong>distributed consensus</strong>.
+Informally speaking, the consensus problem is about getting a set of nodes to agree on a single value.
+Unlike consensus among people, the problem isn't disagreement due to different preferences or conflicting personalities.
+The core difficulties are the same as with the other protocols we've been building: asynchrony, unreliable message delivery, and partial failure.</p>
+<p>Classically, the consensus problem is studied with a system of <span class="arithmatex">\(n\)</span> nodes.
+Each node is initialized with an <em>input</em> value and is equipped with a special <em>output</em> action to decide a value.
+The consensus problem puts the following requirements on the values that nodes output.</p>
+<div class="admonition definition">
+<p class="admonition-title">Definition: Consensus</p>
+<ul>
+<li><strong>Agreement:</strong> All decided values must be equal.</li>
+<li><strong>Integrity:</strong> Any value that a node decides must have been the input value to some node.</li>
+<li><strong>Termination:</strong> All correct nodes must eventually decide some value.</li>
+</ul>
+</div>
+<div class=marginnote>
+You will sometimes see various presentations that add additional requirements like "Validity" to consensus, but these alternative formulations are generally equivalent to the one we have shown.
+</div>
+
+<p>We again assume our Standard Fault Model.
+In this fault model, a <em>correct</em> node is one that doesn't crash.
+If we were working with a fault model that allowed so-called Byzantine failures, where some nodes may be actively malicious, the above definition would have to be modified to only place requirements on the output values of correct (i.e., non-Byzantine) nodes.
+Malicious nodes can and will output whatever they like.</p>
+<div class="admonition todo">
+<p class="admonition-title">jrw comment</p>
+<p>I know the word "correct" is standard in this sense, but I don't like it.
+can we just say "all nodes that don't crash"? also, I would cut the byzantine stuff or
+move it to the end of the chapter.</p>
+</div>
+<p>From a certain perspective, this problem is not all that different from distributed register we built in the previous chapter.
+The input values that our consensus nodes receive are like the values written to the register, and when our consensus nodes decide a value, that's like reading the value of the register.
+There is a critical difference, though.
+Our distributed register was allowed to return different values to different readers; the distributed register had a "last writer wins" policy.
+Our consensus nodes are implementing a shared register where the <em>first</em> writer has to win &ndash; only one value can be decided.</p>
+<p>In multithreaded programming, consensus can be accomplished using the compare-and-swap operation on a shared atomic register.
+Assuming the register is initialized with a special <code>null</code> value (which is not in the domain of possible input values), each thread can execute a compare-and-swap register, swapping in its input value to the register if the current value is <code>null</code>.
+Then, each thread reads the value of the register and outputs that value.
+Exactly one of the compare-and-swap operations will succeed, and all threads will output that value.</p>
+<p>In the distributed environment, though, we don't have shared atomic registers.
+We only have message passing over an imperfect network.
+We saw that in such an environment, it was possible to build a register which could be written and read.
+Unfortunately, that register is of no use to us in solving consensus.
+Even more unfortunately, <strong>solving the consensus problem in our Standard Fault Model is impossible</strong>.
+We will eventually do the (almost) impossible, but before we do that, let's see why the consensus problem is so important.</p>
+<div class="admonition todo">
+<p class="admonition-title">jrw comment</p>
+<p>I think the previous paragraph is not as clear as it could be to a beginner.
+I think what you mean is that a register that only supports read/write is
+not useful for consensus, so you should emphasize the lack of a
+compare-and-swap operation on the register built in the previous chapter.
+And you can even say that building such an operation amounts to consensus.</p>
+<p>Also, maybe forward pointer to proof of impossibility?</p>
+</div>
+<h2 id="state-machine-replication-from-consensus">State Machine Replication from Consensus</h2>
+<p>The first thing to establish is why getting servers to agree on a single value is so important.
+At first glance, this seems less than useful.
+Even if we run many separate instances of consensus, we would still have a system where every value can only be written once.
+There may be a certain beauty to a write-once database, where all decisions are permanent monuments etched in stone for future generations to admire.
+But a useful application it is not.</p>
+<p>The key trick, however, is that instead of having our nodes agree on <em>data</em>, they instead will agree on <em>operations</em>.
+We have our servers run many instances of consensus, where each instance is numbered and associated with a single slot in an <strong>operation log</strong> (often just called a "log").
+Importantly, each of these operations must be <em>deterministic</em>.
+If nondeterministic operations are required, they must be made deterministic (i.e., by making all non-deterministic choices for the operation) before being added to the operation log.</p>
+<pre class="highlight"><code>&lt;Simple diagram here visualizing an operation log&gt;</code></pre>
+<div class="admonition todo">
+<p class="admonition-title">jrw comment</p>
+<p>Can you say a bit more about what you want in the visualization here? For
+example, I assume you are imagining the global view of the one true log,
+rather than per-node views of the log?</p>
+</div>
+<p>Each of our consensus servers can then execute these operations locally as they are decided.
+The servers maintain <em>local state</em> which the operations can access.
+The operations can also specify output events to, for example, send results to clients of our system.</p>
+<p>This idea of reaching agreement on a series of deterministic operations to execute is known as the state machine approach [1].
+Our nodes maintain state that can be continuously updated by individual operations, which appear from the clients' view to be executed atomically.
+This is a very general and powerful model, as we can represent any deterministic, interactive application as a series of operations to be executed on a state machine.
+And because the underlying consensus protocol should tolerate the failure of some of our nodes, when we replicate a state machine using consensus, the resulting system will be able to tolerate the same failures.</p>
+<p>Readers familiar with file systems will recognize that this idea of an operation log is similar to the idea of a journal, where operations are written before being actuated on data.
+And indeed, our consensus-based log of operations will need to solve many of the same problems that journaled file systems do.
+For example, as we've described it so far, our operation log will grow without bound as more and more operations are executed.
+This will eventually consume all available memory, even if the actual state stored in the state machine remains small.
+Therefore, we will need a mechanism to do <em>garbage collection</em> on the log and purge log entries (i.e., consensus instances) when we're certain they're no longer needed.</p>
+
+  
+          
+          <div class="bibliography"><h2>References</h2><ol><li><span class="author">Fred B. Schneider.</span> <span class="title">Implementing Fault-Tolerant Services Using the State Machine
+Approach: A Tutorial.</span> <span class="journal">{ACM} Computing Surveys.</span> <span class="year">1990.</span> </ol></div>
+        </div>
+        <footer id="bottom-bar">
+          
+            <a class="left" href="/book/distributed-objects.html" title="Distributed Objects"><i class="fa-solid fa-left-long"></i></a>
+          
+          
+            <a class="right" href="/book/glossary.html" title="Glossary"><i class="right fa-solid fa-right-long"></i></a>
+          
+        </footer>
+      </div>
+    </div>
+  </body>
+</html>

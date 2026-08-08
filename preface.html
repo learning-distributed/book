@@ -1,0 +1,460 @@
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <title>Preface &ndash; Distributed Systems: Principles and Practice</title>
+
+    
+<script>
+  var notes = true;
+</script>
+
+
+    <!-- Polyfill (fakes modern web APIs on older browsers; load first) -->
+    <script src="/book/third-party/polyfill/js/polyfill.min.js"></script>
+
+    <link rel="stylesheet" type="text/css" href="/book/third-party/normalize/normalize.css">
+
+    <!-- Fonts -->
+    <link rel="stylesheet" type="text/css" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:400,400italic,600">
+    <link rel="stylesheet" type="text/css" href="https://fonts.googleapis.com/css?family=Inconsolata:400,700">
+    <link rel="stylesheet" type="text/css" href="/book/third-party/fontawesome/css/all.min.css">
+
+    <!-- jQuery -->
+    <script src="/book/third-party/jquery/js/jquery.min.js"></script>
+
+    <!-- Highlight -->
+    <link rel="stylesheet" type="text/css" href="/book/third-party/highlight/css/highlight-default.css">
+
+    <!-- SVG -->
+    <script src="/book/third-party/svg/js/svg.min.js"></script>
+
+    <!-- MathJax -->
+    <script>
+      window.MathJax = {
+        tex: {
+          // Allow $ to delimit math mode, to make the behavior inside and outside markdown blocks
+          // the same.
+          inlineMath: [['$', '$'], ['\\(', '\\)']]
+        }
+      };
+    </script>
+    <script src="/book/third-party/mathjax/tex-chtml.js"></script>
+
+    <!-- First-party static resources -->
+    <script src="/book/js/main.js"></script>
+    <script src="/book/js/jrw-svg.js"></script>
+    <script src="/book/js/trace-visualization.js"></script>
+    <script src="/book/js/notes.js"></script>
+
+    <link rel="stylesheet" type="text/css" href="/book/css/main.css">
+
+    
+  </head>
+
+  
+  
+
+  <body>
+    <div id="wrapper">
+      <nav id="sidebar"><ol start="0">
+        
+        
+          
+            
+          
+            <a href="/book/preface.html">
+          
+          <li>Preface</li>
+          
+            </a>
+            
+              <div class="toc">
+<ul>
+<li><a href="#overview">Overview</a></li>
+<li><a href="#course-project">Course Project</a></li>
+<li><a href="#pre-requisites-and-related-courses">Pre-requisites and Related Courses</a></li>
+<li><a href="#topic-outline">Topic Outline</a></li>
+<li><a href="#acknowledgements">Acknowledgements</a></li>
+</ul>
+</div>
+
+            
+          
+        
+          
+        
+          
+            
+          
+            <a href="/book/01-intro.html">
+          
+          <li>Introduction</li>
+          
+            </a>
+            
+          
+        
+          
+        
+          
+            
+          
+            <a href="/book/02-foundations.html">
+          
+          <li>Foundations</li>
+          
+            </a>
+            
+          
+        
+          
+        
+          
+            
+          
+            <a href="/book/rpc.html">
+          
+          <li>Remote Procedure Call</li>
+          
+            </a>
+            
+          
+        
+          
+        
+          
+            
+          
+            <a href="/book/primary-backup.html">
+          
+          <li>Primary-Backup Replication</li>
+          
+            </a>
+            
+          
+        
+          
+        
+          
+            <div class="sidebar-section">
+            <span class="sidebar-section-header">Consensus</span>
+            
+              
+          
+            <a href="/book/distributed-objects.html">
+          
+          <li>Distributed Objects</li>
+          
+            </a>
+            
+          
+        
+            
+              
+          
+            <a href="/book/consensus.html">
+          
+          <li>Consensus and State Machine Replication</li>
+          
+            </a>
+            
+          
+        
+            
+            </div>
+          
+        
+          
+            
+          
+            <a href="/book/glossary.html">
+          
+          <li>Glossary</li>
+          
+            </a>
+            
+          
+        
+          
+        
+        
+          
+          
+            <a href="/book/style-guide.html">
+          
+          <li>Style Guide</li>
+          
+            </a>
+            
+          
+        
+        
+      </ol></nav>
+      <div id="main-column">
+        <header id="top-bar">
+          <i class="fa-solid fa-bars" id="sidebar-button"></i>
+          <h1 class="book-title"><a href="/book/">Distributed Systems: Principles and Practice</a></h1>
+        </header>
+        <div id="content">
+          <h1>Preface</h1>
+          
+          
+  
+<h2 id="overview">Overview</h2>
+<p>Welcome to this book!</p>
+<p>Distributed Systems: Principles and Practice is an online textbook 
+for a senior undergraduate or 
+masters course in distributed systems.  It is also appropriate for students studying
+the material on their own. </p>
+<p>Many of our students say that the material in this book - based on a course
+we have taught for the past decade at the University of Washington - 
+is among the hardest, most interesting, and most relevant courses that
+those students took during their time as undergraduates. </p>
+<p>Part of the excitement in learning distributed systems, and for us in 
+teaching the material, is that the topic combines two otherwise 
+separate threads of academic computer science education: systems and theory. 
+On one side, computer science systems classes focus on practical considerations - how do we build systems to be useful.
+On the other, computer science theory classes provide formal rigor 
+- how can we be sure that algorithms do what we think they do?</p>
+<p>What is perhaps unique about distributed systems is that formal rigor
+is key to building systems that are useful in practice.
+All useful distributed systems are both concurrent and fault tolerant.
+Concurrency arises from the independent operation of the computers comprising
+the distributed system; once we have multiple computers working together,
+partial failures - failures of some components but not others -
+becomes an inherent feature of system operation. 
+What does it mean to compute a result correctly despite the 
+failure of some (but not all) of a system's components? </p>
+<p>Both concurrency and fault tolerance require careful reasoning. 
+For sequential programs, we can tell whether a program works 
+correctly on some input by running the program. 
+Does it produce the expected output? For a distributed system,
+however, that isn't nearly good enough.
+Perhaps one part of the distributed system runs a bit faster the next time through, 
+or the failure occurs on a different computer and/or at a slightly different time.
+How do we convince ourselves that the design works in <em>all</em> cases?</p>
+<p>This is the key intellectual challenge for students learning this material, and
+helping students to overcome that challenge is our goal in writing this book.
+One of the most important learning outcomes is to <em>think</em> like a distributed systems
+developer - how do we reason about the behavior of an inherently concurrent system
+of physically separate computers, without shared state between those computers, and where
+some of those computers can fail, while the system as a whole continues to provide
+correct answers to users?</p>
+<h2 id="course-project">Course Project</h2>
+<p>We strongly encourage instructors and students to pair this book with some course implementation project.
+We have experience teaching difficult distributed systems concepts to thousands of students over 
+the course of the past decade. In our view, asking students to implement key concepts, 
+and then rigorously validating those implementations, 
+is crucial towards deepening student understanding of the material.  </p>
+<p>While we have written the book to be independent of any specific course project, 
+one candidate to consider is dslabs (link), an open source project we developed for the distributed systems class we teach at the University of Washington (UW). 
+dslabs is notable because it embeds a formal model checker that 
+automatically validates students code against literally millions of possible event interleavings and failure scenarios.
+While that might seem extreme, we believe engaging students in the 
+struggle to make systems work under all failure conditions is key to getting
+students to notice and repair where their conceptual understanding is fuzzy or incomplete.
+dslabs has been adopted at many schools, both in the US and internationally, 
+but it is not the only option.  For example, faculty at MIT have developed 
+a different open source project that teaches many of the same topics.</p>
+<p>The dslabs project walks students through the construction of a linearizable, fault tolerant, highly
+available, dynamically sharded, transactional key-value store, through a series of four assignments. 
+If those words seem like jargon, do not despair - this book explains
+the meaning of "linearizable", "fault tolerant", "highly available", "dynamically sharded", and "transactional",
+including how these concepts are implemented in practice.
+The resulting system, built from scratch by students except for some framework code needed by the model checker, 
+is similar to what underpins resilient state management in the most widely used planetary-scale distributed applications, 
+such as search, global mapping software, AI model serving, e-commerce, content distribution, and social networks.<br />
+At UW, students complete the dslabs project within a high tempo ten week 
+quarter, but 
+dslabs is also appropriate for (and frequently used by) schools on a semester system.</p>
+<h2 id="pre-requisites-and-related-courses">Pre-requisites and Related Courses</h2>
+<p>Although we teach distributed systems primarily to seniors, distributed systems can be taken fairly early in a
+computer science curriculum since it has relatively few pre-requisites.<br />
+As perhaps an extreme example, a student completed our class while still in high school (hi Alex!).
+For this textbook, we assume knowledge 
+of data structures and a basic familiarity with mathematical reasoning. If paired with the dslabs project, 
+students should also have some experience debugging complex code.<br />
+Prior exposure to reasoning about concurrency is helpful but not required.</p>
+<p>This textbook can be placed within the broader agenda of teaching students how to build correct,
+efficient, and secure computer systems. Several other systems courses 
+address closely related topics.  For example, at UW, we offer these 
+courses as complements to our distributed systems course: </p>
+<ul>
+<li>
+<p>Operating Systems - this course focuses on the management and scheduling of the hardware resources of a single multiprocessor 
+machine on behalf of multiple users.  A key challenge in operating systems is how to isolate potentially buggy 
+or untrustworthy software from affecting the correctness of the operating system and the other application programs running on it.
+Another is to schedule resources efficiently when demand exceeds supply. Concurrency and fault tolerance are 
+essential topics in both operating systems and distributed systems - modern computers are almost always multiprocessors, 
+and they sometimes crash, whether due to a power outage, hardware fault, or software error in the operating system itself. 
+For example, we want to construct file systems so that they do not become corrupted or lose saved user data 
+regardless of whether or when the machine crashes. Many of the same principles that apply to distributed
+systems also apply in the construction of file systems.</p>
+</li>
+<li>
+<p>Computer Networks - this course concerns how to provide secure, reliable, and efficient communication between 
+computers on a planetary scale.
+Computer networks can be seen as a specialized kind of distributed system for the purpose of communication. Fault tolerant
+algorithms are crucial, as we need the network to continue to work even when individual network links, switches, or routers fail. 
+One of the primary goals of the Internet was to provide this property. 
+Another similarity is that network protocols need to interoperate between different machines and implementations
+written by different engineers and companies.  That means our smartphones don't only talk to servers run by Apple or Google
+or Samsung.  One important difference is that distributed systems 
+often need to manage application state in a consistent manner across partial failures, while networks generally assume 
+communication is stateless (from the network's perspective) and can be safely restarted.</p>
+</li>
+<li>
+<p>Database Systems - this course (at UW a two course sequence on database abstractions and their implementation)
+concerns ways to efficiently manage and compute against large amounts of data. A key underlying abstraction
+in database systems is the transaction - the atomic and durable update to concurrent state. Transactions are also
+a key abstraction in distributed systems. UW's database classes focus on the implementation of the transaction abstraction
+for individual machines, while this textbook (and our distributed systems class) explains how the idea can be extended to work
+across networks of servers. </p>
+</li>
+</ul>
+<p>These courses, along with distributed systems, are not sequenced; students are allowed to
+take them in any order.  Students interested in a full understanding of how computer systems work 
+are encouraged to take as many of these courses as possible. </p>
+<p>UW also offers several cross-cutting systems classes that integrate concepts and approaches from multiple perspectives,
+including distributed systems:</p>
+<ul>
+<li>
+<p>Concurrency and Parallelism - this recently introduced course is designed to 
+expose students earlier in the curriculum to the concepts of shared-memory concurrency and the formal reasoning about 
+the correctness of concurrent programs. If such a class exists at your school, it would make some of the concepts
+in this textbook a bit easier to understand. However, we do not assume prior experience with concurrency as a pre-requisite.</p>
+</li>
+<li>
+<p>Datacenter Systems - datacenter and cloud systems have become the primary way to do large scale computing.
+The topic relies on and integrates the perspectives of operating systems, networking, databases, and distributed systems, 
+while going into more depth on the specific challenges of datacenters, such as virtualization, 
+distributed resource management, capacity planning, and queueing theory.</p>
+</li>
+<li>
+<p>Mobile Systems - at the other end of the spectrum, edge computing offers its own set of challenges
+while relying on many of the concepts drawn from these same courses. Because smartphones and other mobile devices 
+are close to the user, this class offers a way to understand systems concepts as they apply directly 
+to user interaction with computers.</p>
+</li>
+</ul>
+<p>In other words, there is a lot to learn!
+We ourselves have taught a majority of the above courses;
+to be honest, we find teaching distributed systems to be the most fun.</p>
+<h2 id="topic-outline">Topic Outline</h2>
+<p>The outline of this textbook follows the sequence we use to teach the material at UW. We plan to release chapters as they are written, and so we note below 
+which chapters are available now versus planned for the near future.
+Because student patience is limited when covering abstract or theoretical 
+material without a grounding in practice, we interleave 
+more theoretical and foundational chapters with those that are more 
+pragmatic and immediately useful.
+This interleaving also enables students to start on their 
+implementation project earlier in the term; we strongly recommend covering
+the material in such a way as to give students more time to struggle with
+the hardest concepts. Of course, instructors are encouraged to mix and match 
+the ordering of topics as they see fit. </p>
+<ul>
+<li>
+<p>Chapter 1: Introduction. (Under construction) This chapter provides students an initial exposure to the challenges
+posed by distributed systems; outlines goals and evaluation metrics; 
+and discusses internal architectural design decisions underpinning
+many large-scale distributed systems. </p>
+</li>
+<li>
+<p>Chapter 2: Foundations. Before we discuss how to build 
+distributed systems to achieve certain goals, we need to formalize 
+what we can assume, and what shouldn't assume, 
+about the behavior of the underlying computing and 
+communication infrastructure. For example, we need to
+define the ways in which faults manifest so that we can tell
+whether our algorithms will succeed or fail when they meet failures
+in the real world.</p>
+</li>
+<li>
+<p>Chapter 3: Remote Procedure Call. Remote procedure calls (RPCs) are an extremely widely used 
+abstraction, used billions of times per second by cloud and smartphone applications worldwide.<br />
+Using a key-value store as an example, we describe how RPCs are used and also how they are implemented.
+This introduces students to the basics of failure analysis against a defined fault model, 
+in a setting where it is simple to reason about correctness. </p>
+</li>
+<li>
+<p>Chapter 4: Virtual and Physical Time. (Under construction)</p>
+</li>
+<li>
+<p>Chapter 5: Checkpointing and Debugging. (Under construction)</p>
+</li>
+<li>
+<p>Chapter 6: Primary Backup. (Under construction) Primary-backup protocols are the workhorse of fault
+tolerant distributed systems.  Using a key-value store as a working example, we show how to build
+a system that can tolerate (some) server faults in addition to (some) network faults such as those
+addressed in the previous chapter.  Our focus in this chapter is to expand the range and complexity 
+of considerations students consider when reasoning about correctness, as well as to present concrete 
+protocols that are used in practice.</p>
+</li>
+<li>
+<p>Chapter 7: Memory Semantics. (Under construction) Linearizability, strict consistency, stale reads, eventual consistency,
+memory fences, and other concepts.</p>
+</li>
+<li>
+<p>Chapter 8: Distributed Objects.</p>
+</li>
+<li>
+<p>Chapter 9: Consensus. The impossibility of the same. (Under construction)</p>
+</li>
+<li>
+<p>Chapter 10: Paxos and MultiPaxos. (Under construction)</p>
+</li>
+<li>
+<p>Chapter 11: Leases. (Under construction)</p>
+</li>
+<li>
+<p>Chapter 12: Sharding and Load Balancing. (Under construction)</p>
+</li>
+<li>
+<p>Chapter 13: Fault Tolerant Cache Coherence. (Under construction) For linearizable and weaker consistency models.</p>
+</li>
+<li>
+<p>Chapter 14: Distributed Transactions. (Under construction) Two phase commit for multi-key operations on sharded storage,
+and its highly available implementations.</p>
+</li>
+<li>
+<p>Chapter 15: Disconnected Operation and Eventual Consistency. (Under construction)</p>
+</li>
+<li>
+<p>Chapter 16: Planetary Scale Replication. (Under construction)</p>
+</li>
+<li>
+<p>Chapter 17: Microservices. (Under construction)</p>
+</li>
+<li>
+<p>Chapter 18: Security. (Under construction)</p>
+</li>
+</ul>
+<h2 id="acknowledgements">Acknowledgements</h2>
+<p>We would like to thank Lorenzo Alvisi and Robert Morris, who graciously shared
+course materials with us when we were first learning how to teach this material, 
+as well as our colleague Doug Woos, who taught the class with us and significantly improved 
+our understanding of how to present the material.  We would also like to thank the many UW teaching assistants 
+we have worked with over the years; their creativity and input have helped refine and improve 
+our approach to teaching this material, and their enthusiasm for ensuring that every student
+has the opportunity to learn is inspirational.
+We would also like to thank ETH Zurich and the UW Whiteley Center for hosting us while writing
+portions of this textbook.</p>
+
+  
+          
+          
+        </div>
+        <footer id="bottom-bar">
+          
+            <a class="left" href="/book/index.html" title="Distributed Systems: Principles and Practice"><i class="fa-solid fa-left-long"></i></a>
+          
+          
+            <a class="right" href="/book/01-intro.html" title="Introduction"><i class="right fa-solid fa-right-long"></i></a>
+          
+        </footer>
+      </div>
+    </div>
+  </body>
+</html>

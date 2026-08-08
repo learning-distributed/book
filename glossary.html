@@ -1,0 +1,476 @@
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <title>Glossary &ndash; Distributed Systems: Principles and Practice</title>
+
+    
+
+    <!-- Polyfill (fakes modern web APIs on older browsers; load first) -->
+    <script src="/book/third-party/polyfill/js/polyfill.min.js"></script>
+
+    <link rel="stylesheet" type="text/css" href="/book/third-party/normalize/normalize.css">
+
+    <!-- Fonts -->
+    <link rel="stylesheet" type="text/css" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:400,400italic,600">
+    <link rel="stylesheet" type="text/css" href="https://fonts.googleapis.com/css?family=Inconsolata:400,700">
+    <link rel="stylesheet" type="text/css" href="/book/third-party/fontawesome/css/all.min.css">
+
+    <!-- jQuery -->
+    <script src="/book/third-party/jquery/js/jquery.min.js"></script>
+
+    <!-- Highlight -->
+    <link rel="stylesheet" type="text/css" href="/book/third-party/highlight/css/highlight-default.css">
+
+    <!-- SVG -->
+    <script src="/book/third-party/svg/js/svg.min.js"></script>
+
+    <!-- MathJax -->
+    <script>
+      window.MathJax = {
+        tex: {
+          // Allow $ to delimit math mode, to make the behavior inside and outside markdown blocks
+          // the same.
+          inlineMath: [['$', '$'], ['\\(', '\\)']]
+        }
+      };
+    </script>
+    <script src="/book/third-party/mathjax/tex-chtml.js"></script>
+
+    <!-- First-party static resources -->
+    <script src="/book/js/main.js"></script>
+    <script src="/book/js/jrw-svg.js"></script>
+    <script src="/book/js/trace-visualization.js"></script>
+    <script src="/book/js/notes.js"></script>
+
+    <link rel="stylesheet" type="text/css" href="/book/css/main.css">
+
+    
+  </head>
+
+  
+  
+
+  <body>
+    <div id="wrapper">
+      <nav id="sidebar"><ol start="0">
+        
+        
+          
+            
+          
+            <a href="/book/preface.html">
+          
+          <li>Preface</li>
+          
+            </a>
+            
+          
+        
+          
+        
+          
+            
+          
+            <a href="/book/01-intro.html">
+          
+          <li>Introduction</li>
+          
+            </a>
+            
+          
+        
+          
+        
+          
+            
+          
+            <a href="/book/02-foundations.html">
+          
+          <li>Foundations</li>
+          
+            </a>
+            
+          
+        
+          
+        
+          
+            
+          
+            <a href="/book/rpc.html">
+          
+          <li>Remote Procedure Call</li>
+          
+            </a>
+            
+          
+        
+          
+        
+          
+            
+          
+            <a href="/book/primary-backup.html">
+          
+          <li>Primary-Backup Replication</li>
+          
+            </a>
+            
+          
+        
+          
+        
+          
+            <div class="sidebar-section">
+            <span class="sidebar-section-header">Consensus</span>
+            
+              
+          
+            <a href="/book/distributed-objects.html">
+          
+          <li>Distributed Objects</li>
+          
+            </a>
+            
+          
+        
+            
+              
+          
+            <a href="/book/consensus.html">
+          
+          <li>Consensus and State Machine Replication</li>
+          
+            </a>
+            
+          
+        
+            
+            </div>
+          
+        
+          
+            
+          
+            <a href="/book/glossary.html">
+          
+          <li>Glossary</li>
+          
+            </a>
+            
+              <div class="toc">
+<ul></ul>
+</div>
+
+            
+          
+        
+          
+        
+        
+          
+          
+            <a href="/book/style-guide.html">
+          
+          <li>Style Guide</li>
+          
+            </a>
+            
+          
+        
+        
+      </ol></nav>
+      <div id="main-column">
+        <header id="top-bar">
+          <i class="fa-solid fa-bars" id="sidebar-button"></i>
+          <h1 class="book-title"><a href="/book/">Distributed Systems: Principles and Practice</a></h1>
+        </header>
+        <div id="content">
+          <h1>Glossary</h1>
+          
+          
+  
+<ul>
+<li>
+<p><span class=li-header>Action.</span>
+  The steps taken by a node in response to an event, such as receiving a packet or a timeout expiration. The action may change local state, send messages to other nodes, or set additional timeouts. Cf. Event.</p>
+</li>
+<li>
+<p><span class=li-header>Availability.</span>
+  The fraction of time that a system is responsive to requests, including during partial failure events.</p>
+</li>
+<li>
+<p><span class=li-header>Cache.</span>
+  A local or nearby copy of partial results or recently used data, designed to reduce the latency of responding to a request.</p>
+</li>
+<li>
+<p><span class=li-header>Client.</span>
+  A computer that requests a remote server for some data or for some action to be taken.  Cf. Client-server communication.</p>
+</li>
+<li>
+<p><span class=li-header>Client-server communication.</span>
+  A common distributed system communication pattern where one node, the client, requests information
+from or for an action to be taken by another node, the server. Cf. Remote Procedure Call.</p>
+</li>
+<li>
+<p><span class=li-header>Cloud computing.</span>
+    Allows companies (and users) to rent computing resources in a shared facility such as 
+    a data center, or in many cases, a network of data centers.
+    A common use case is to host the backends of mobile and web applications. </p>
+</li>
+<li>
+<p><span class=li-header>Compute Express Link (CXL).</span>
+  A proposed standard for pooling memory between servers in a cache coherent manner.</p>
+</li>
+<li>
+<p><span class=li-header>Content distribution network (CDN).</span>
+   A distributed system that aims to place and serve copies of data near to the users that want that data.</p>
+</li>
+<li>
+<p><span class=li-header>Core.</span>
+  An individual computational element within a processor, capable of executing instructions and modifying state,
+with its own local cache.</p>
+</li>
+<li>
+<p><span class=li-header>Data center.</span>
+  A place for the centralized computer processing and serving of data. </p>
+<ul>
+<li><span class=li-header>Data center rack.</span>
+   A rack is a set of 40-80 servers, often with a shared network switch and power distribution.
+   Servers within a rack may fail, but sometimes the entire rack can become disconnected
+   if the network switch or power distribution fails.</li>
+</ul>
+</li>
+<li>
+<p><span class=li-header>Disaggregated memory/storage.</span>
+  A design pattern where the memory or storage is physically separate from the compute node that
+uses that memory or storage.</p>
+</li>
+<li>
+<p><span class=li-header>Distributed application.</span>
+  A user-facing distributed system, often split between a portion running on the client machine and a portion
+  running on backend servers.</p>
+</li>
+<li>
+<p><span class=li-header>Distributed service.</span>
+  A distributed system used by other distributed systems to get their work done.</p>
+</li>
+<li>
+<p><span class=li-header>Distributed system.</span>
+A set of (often geographically) 
+dispersed computers working together to provide some useful service. </p>
+</li>
+<li>
+<p><span class=li-header>Event.</span>
+  An occurence on a node in a distributed system that triggers some computation local to the node, such
+as the arrival of a message or a timeout. Cf. Event Handler. </p>
+</li>
+<li>
+<p><span class=li-header>Event handler.</span>
+  The code that runs when an event occurs.</p>
+</li>
+<li>
+<p><span class=li-header>Failure.</span>
+  The incorrect functioning of some node or network element in a distributed system.</p>
+</li>
+<li>
+<p><span class=li-header>Failure model.</span>
+  A formal description of the types of failures a system is designed to handle.</p>
+<ul>
+<li>
+<p><span class=li-header>Asynchronous.</span>
+  Tasks in a distributed system, such as to run an event handler or deliver a message,
+may take an arbitrary amount of time to complete.  Cf. Synchronous failure model.</p>
+</li>
+<li>
+<p><span class=li-header>Byzantine.</span>
+  The behavior of a failing node or network may be arbitrary, including sending or delivering arbitrary messages.
+Cf. Fail-stop failure model.</p>
+</li>
+<li>
+<p><span class=li-header>Gray.</span>
+  When a node or network continues to operate, but at far below its normal operating parameters.
+  An example is when a network switch or link suddenly starts dropping half of its packets,
+  or if a server needs to perform emergency operating system tasks preventing
+  it from responding for an extended period of time.</p>
+</li>
+<li>
+<p><span class=li-header>Fail stop.</span>
+  When a node or network fails, it stops instead of performing incorrectly.  Cf. Byzantine failure model.</p>
+</li>
+<li>
+<p><span class=li-header>Synchronous.</span>
+  Tasks in a distributed system, such as to run an event handler or deliver a message,
+always take a bounded amount of time to complete.  Cf. Asynchronous failure model.</p>
+</li>
+</ul>
+</li>
+<li>
+<p><span class=li-header>Key-value store.</span>
+  A distributed application that stores values for later key lookup, that is, that provides a function
+for mapping keys to values.</p>
+</li>
+<li>
+<p><span class=li-header>Linearizable.</span>
+  Operations on distributed state are performed as if they occur in a single global order visible to all nodes.</p>
+</li>
+<li>
+<p><span class=li-header>Load balancer.</span>
+  A type of microservice that assigns incoming requests to servers.</p>
+</li>
+<li>
+<p><span class=li-header>Local state.</span>
+  Memory local to a node. Event handlers can modify local state, but cannot directly modify the state
+of other nodes.</p>
+</li>
+<li>
+<p><span class=li-header>Message.</span>
+  A logical unit of communication between nodes in a distributed system.</p>
+</li>
+<li>
+<p><span class=li-header>Microservice.</span>
+  A self-contained distributed system, typically implemented by a single person or a small team,
+that performs a single well-defined task and is independently scalable.
+More complex applications and services are composed of operations on a collection of microservices.</p>
+</li>
+<li>
+<p><span class=li-header>Network.</span>
+  A group of links and switches that together deliver packets of data from one node to another.</p>
+<ul>
+<li>
+<p><span class=li-header>Network Link.</span>
+  A means for conveying data from one physical location to another, e.g., from one node to a network switch,
+between network switches, or from a switch to a node.</p>
+</li>
+<li>
+<p><span class=li-header>Network Packet.</span>
+  The physical unit of transfer in a computer network, typically with some defined header format and maximum size.</p>
+</li>
+<li>
+<p><span class=li-header>Network Switch/Router.</span>
+  A means for conveying packets between network links in order to move the packet towards the destination.
+  Routers and switches differ based on which part of the packet header is used during forwarding. </p>
+</li>
+</ul>
+</li>
+<li>
+<p><span class=li-header>Network effect.</span>
+  When a system becomes more valuable to each user as a function of how many other people are using the system.
+A telephone system is an example of the network effect.</p>
+</li>
+<li>
+<p><span class=li-header>Node.</span>
+  A computational element in a distributed system that can send and receive messages, read and modify local state, and set
+and recieve timeouts.</p>
+<ul>
+<li>
+<p><span class=li-header>Source node.</span>
+  The originating node for a network message.</p>
+</li>
+<li>
+<p><span class=li-header>Destination node.</span>
+  The target node for a network message.</p>
+</li>
+</ul>
+</li>
+<li>
+<p><span class=li-header>Partial failure.</span>
+  A failure where some, but not all, of the nodes of a distributed system fail.</p>
+</li>
+<li>
+<p><span class=li-header>Peer-to-peer.</span>
+  A communication pattern where clients communicate directly with each other.</p>
+</li>
+<li>
+<p><span class=li-header>Planned maintenance.</span>
+  A data center outage for one or many servers, or the networks connecting them,
+  to complete an upgrade. The applications running on those servers can be warned
+  in advance of the outage, e.g., to migrate work onto other servers unaffected by the change,
+  as opposed to a crash fault which happens unexpectedly.</p>
+</li>
+<li>
+<p><span class=li-header>Points of presence.</span>
+  Geographically distributed representatives of a distributed system placed near its users.</p>
+</li>
+<li>
+<p><span class=li-header>Reliability.</span>
+  The likelihood (ideally very high) that a system performs as intended, that is,
+it produces the correct result.</p>
+</li>
+<li>
+<p><span class=li-header>Quorum.</span>
+  The number of nodes in a distributed system that are consulted before some
+action is taken, for example, to read or update data. In many distributed systems, the 
+quorum is set to be a simple majority, ensuring that any two quorums intersect with at least one server.</p>
+</li>
+<li>
+<p><span class=li-header>Replicated state machine.</span>
+  A model for how multiple servers can implement a fail-stop fault tolerant 
+service by deterministically executing the same sequence of operations in the same order at every replica.</p>
+</li>
+<li>
+<p><span class=li-header>REST (Representational State Transfer).</span>
+  A model for building distributed applications
+with functionality split between a part that runs on each client and a (shared) part implemented
+as a distributed service.  The client may cache data, but stores no persistent state. Instead it transfers
+the state to the distributed service, simplifying reconnection after an outage. </p>
+</li>
+<li>
+<p><span class=li-header>Server.</span>
+  A computer that provides data or takes actions on request.  Cf. Client-server communication. </p>
+</li>
+<li>
+<p><span class=li-header>Sharding.</span>
+  A parallelization strategy that splits (or shards) the work of a distributed system across a set of servers,
+  for example by assigning different users to different servers.</p>
+</li>
+<li>
+<p><span class=li-header>Shrink wrap software.</span>
+  A model for providing software where the software was printed on physical media and 
+shipped to the end user to install. </p>
+</li>
+<li>
+<p><span class=li-header>Software as a Service (SaaS).</span>
+  A model for providing software where the software is provided to users by hosting it in the cloud.</p>
+</li>
+<li>
+<p><span class=li-header>Stale data.</span>
+  Information about the state of another node may be out of date, or stale, when
+used on a different machine.</p>
+</li>
+<li>
+<p><span class=li-header>Stateful user interaction.</span>
+  A distributed system's behavior 
+depends on both the client request and the server's previous interactions 
+with that and other clients.</p>
+</li>
+<li>
+<p><span class=li-header>Timeout.</span>
+  A notification delivered to a node at a specified point in the future. </p>
+</li>
+<li>
+<p><span class=li-header>Transaction.</span>
+  A group of operations whose effects are observed as all happening together, or not at all, by other nodes.</p>
+</li>
+<li>
+<p><span class=li-header>Trust model.</span>
+  The set of malicious attacks that are addressed, and more importantly not addressed, by a system.</p>
+</li>
+</ul>
+
+  
+          
+          
+        </div>
+        <footer id="bottom-bar">
+          
+            <a class="left" href="/book/consensus.html" title="Consensus and State Machine Replication"><i class="fa-solid fa-left-long"></i></a>
+          
+          
+        </footer>
+      </div>
+    </div>
+  </body>
+</html>

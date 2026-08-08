@@ -1,0 +1,354 @@
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <title>Style Guide &ndash; Distributed Systems: Principles and Practice</title>
+
+    
+
+    <!-- Polyfill (fakes modern web APIs on older browsers; load first) -->
+    <script src="/book/third-party/polyfill/js/polyfill.min.js"></script>
+
+    <link rel="stylesheet" type="text/css" href="/book/third-party/normalize/normalize.css">
+
+    <!-- Fonts -->
+    <link rel="stylesheet" type="text/css" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:400,400italic,600">
+    <link rel="stylesheet" type="text/css" href="https://fonts.googleapis.com/css?family=Inconsolata:400,700">
+    <link rel="stylesheet" type="text/css" href="/book/third-party/fontawesome/css/all.min.css">
+
+    <!-- jQuery -->
+    <script src="/book/third-party/jquery/js/jquery.min.js"></script>
+
+    <!-- Highlight -->
+    <link rel="stylesheet" type="text/css" href="/book/third-party/highlight/css/highlight-default.css">
+
+    <!-- SVG -->
+    <script src="/book/third-party/svg/js/svg.min.js"></script>
+
+    <!-- MathJax -->
+    <script>
+      window.MathJax = {
+        tex: {
+          // Allow $ to delimit math mode, to make the behavior inside and outside markdown blocks
+          // the same.
+          inlineMath: [['$', '$'], ['\\(', '\\)']]
+        }
+      };
+    </script>
+    <script src="/book/third-party/mathjax/tex-chtml.js"></script>
+
+    <!-- First-party static resources -->
+    <script src="/book/js/main.js"></script>
+    <script src="/book/js/jrw-svg.js"></script>
+    <script src="/book/js/trace-visualization.js"></script>
+    <script src="/book/js/notes.js"></script>
+
+    <link rel="stylesheet" type="text/css" href="/book/css/main.css">
+
+    
+  </head>
+
+  
+  
+
+  <body>
+    <div id="wrapper">
+      <nav id="sidebar"><ol start="0">
+        
+        
+          
+            
+          
+            <a href="/book/preface.html">
+          
+          <li>Preface</li>
+          
+            </a>
+            
+          
+        
+          
+        
+          
+            
+          
+            <a href="/book/01-intro.html">
+          
+          <li>Introduction</li>
+          
+            </a>
+            
+          
+        
+          
+        
+          
+            
+          
+            <a href="/book/02-foundations.html">
+          
+          <li>Foundations</li>
+          
+            </a>
+            
+          
+        
+          
+        
+          
+            
+          
+            <a href="/book/rpc.html">
+          
+          <li>Remote Procedure Call</li>
+          
+            </a>
+            
+          
+        
+          
+        
+          
+            
+          
+            <a href="/book/primary-backup.html">
+          
+          <li>Primary-Backup Replication</li>
+          
+            </a>
+            
+          
+        
+          
+        
+          
+            <div class="sidebar-section">
+            <span class="sidebar-section-header">Consensus</span>
+            
+              
+          
+            <a href="/book/distributed-objects.html">
+          
+          <li>Distributed Objects</li>
+          
+            </a>
+            
+          
+        
+            
+              
+          
+            <a href="/book/consensus.html">
+          
+          <li>Consensus and State Machine Replication</li>
+          
+            </a>
+            
+          
+        
+            
+            </div>
+          
+        
+          
+            
+          
+            <a href="/book/glossary.html">
+          
+          <li>Glossary</li>
+          
+            </a>
+            
+          
+        
+          
+        
+        
+          
+          
+            <a href="/book/style-guide.html">
+          
+          <li>Style Guide</li>
+          
+            </a>
+            
+              <div class="toc">
+<ul>
+<li><a href="#style">Style</a><ul>
+<li><a href="#headers">Headers</a></li>
+</ul>
+</li>
+<li><a href="#authoring-pages">Authoring Pages</a><ul>
+<li><a href="#comments">Comments</a></li>
+<li><a href="#callouts">Callouts</a></li>
+<li><a href="#margin-notes">Margin Notes</a></li>
+<li><a href="#references">References</a></li>
+<li><a href="#cross-references">Cross-references</a></li>
+</ul>
+</li>
+</ul>
+</div>
+
+            
+          
+        
+        
+      </ol></nav>
+      <div id="main-column">
+        <header id="top-bar">
+          <i class="fa-solid fa-bars" id="sidebar-button"></i>
+          <h1 class="book-title"><a href="/book/">Distributed Systems: Principles and Practice</a></h1>
+        </header>
+        <div id="content">
+          <h1>Style Guide</h1>
+          
+          
+  
+<h2 id="style">Style</h2>
+<h3 id="headers">Headers</h3>
+<p>All Headers (i.e., <code>#</code>, <code>##</code>, <code>###</code> and <code>&lt;h1&gt;</code>, <code>&lt;h2&gt;</code>, <code>&lt;h3&gt;</code> etc.) should be in title case.</p>
+<h2 id="authoring-pages">Authoring Pages</h2>
+<p>Content pages should be stored in the <code>src/pages/</code> directory as <code>.html</code> files.
+Pages are interpreted using the <a href="https://jinja.palletsprojects.com/en/stable/">Jinja</a> templating engine.
+Every page should extend our base template (or a template that extends our base template) by beginning with
+<pre class="highlight"><code>{% extends "base.html" %}
+</code></pre></p>
+<p>Pages can optionally begin with "front matter," a section of the file which is interpreted as YAML and made available to the template.
+For example, starting a page file with
+<pre class="highlight"><code>---
+title: Page Title
+---
+{% extends "base.html" %}
+</code></pre>
+declares the title of the page to be "Page Title".</p>
+<p>The base template expects all content to occur in the block named body.
+This means that every content page should define a body block as follows
+<pre class="highlight"><code>---
+title: Page Title
+---
+{% extends "base.html" %}
+
+{% block body %}
+Page content here.
+{% endblock %}
+</code></pre></p>
+<p>Markdown is particularly convenient for writing and reading content.
+Markdown can be rendered using the <code>{% markdown %}</code> tag as follows
+<pre class="highlight"><code>---
+title: Page Title
+---
+{% extends "base.html" %}
+
+{% block body %}
+{% markdown %}
+
+## Markdown header
+
+Mardown content here.
+
+{% endmarkdown %}
+{% endblock %}
+</code></pre></p>
+<h3 id="comments">Comments</h3>
+<p>Comments in Jinja are written using <code>{# ... #}</code>.
+Everything inside <code>{#</code> and <code>#}</code> will be ignored by Jinja.
+HTML style comments written as <code>&lt;!-- ... --&gt;</code> also work but will appear in the output.</p>
+<h3 id="callouts">Callouts</h3>
+<p>Callouts are written with:</p>
+<pre class="highlight"><code>!!! note
+    This is a callout with some useful information.
+    The callout can span multiple lines.
+
+    And new paragraphs.
+</code></pre>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>This is a callout with some useful information.
+The callout can span multiple lines.</p>
+<p>And new paragraphs.</p>
+</div>
+<p>The first word becomes the "class" of the call out as well as its title (with the first letter capitalized), and you can optionally override the title with:</p>
+<pre class="highlight"><code>!!! note "Callout Title"
+    This is a callout with some useful information.
+</code></pre>
+<div class="admonition note">
+<p class="admonition-title">Callout Title</p>
+<p>This is a callout with some useful information.</p>
+</div>
+<p>We currently support two special types of callouts: <code>collapsible</code> and <code>todo</code>.</p>
+<pre class="highlight"><code>!!! collapsible "Collapsible Callout"
+    This callout is collapsible and collapsed by default.
+</code></pre>
+<div class="admonition collapsible">
+<p class="admonition-title">Collapsible Callout</p>
+<p>This callout is collapsible and collapsed by default.</p>
+</div>
+<pre class="highlight"><code>!!! todo
+    This callout is a TODO.
+</code></pre>
+<div class="admonition todo">
+<p class="admonition-title">Todo</p>
+<p>This callout is a TODO.</p>
+</div>
+<p>More types can be added as we need them.
+Custom styles are placed in <code>main.css</code>.</p>
+<div class="admonition todo">
+<p class="admonition-title">Todo</p>
+<p>Make a decision about capitalization of callout titles.</p>
+</div>
+<h3 id="margin-notes">Margin Notes</h3>
+<p>For now, margin notes are written using HTML <code>div</code>s.</p>
+<div class=marginnote>
+This is a margin note.
+Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
+</div>
+
+<pre class="highlight"><code>&lt;div class=marginnote&gt;
+This is a margin note.
+Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
+&lt;/div&gt;</code></pre>
+<p>Margin notes appear wherever in the vertical flow the <code>div</code> appears.
+Therefore, if you want to add a margin note to a paragraph, you should add it <strong>before</strong> the paragraph.
+We don't currently have a good way to add margin notes in the middle of a paragraph.
+If we have need for this, we can look into adding it in the future.</p>
+<p>Also note that margin notes look different depending on the width of the screen.
+On a smaller screen, they appear inline, but again before the paragraph they're supposed to apply to.
+We may need to figure out a better way to do this in the future.</p>
+<h3 id="references">References</h3>
+<p>The <code>BibExtension</code> in <code>build.py</code> provides support for inline citations.</p>
+<p>Add entries to <code>references.bib</code> and then cite them like so:
+<pre class="highlight"><code>Lamport introduced the Paxos algorithm as a solution to the
+distributed consensus problem {% cite "lamport98:part-time" %}.
+</code></pre></p>
+<p>If there are any citations on a page, a references section will be automatically added to the end of the page.
+Currently, works cited will be included in the bibliograph in order of appearance and references are listed on a per-page basis.
+We can always change this later by changing the base template.</p>
+<h3 id="cross-references">Cross-references</h3>
+<p>The <code>CrossRefExtension</code> in <code>build.py</code> provides support for labeling and referring to figures etc.</p>
+<p>Define a label like this:
+<pre class="highlight"><code>{% label 'fig:style-guide-figure' %}
+</code></pre></p>
+<p>And then refer to it with:
+<pre class="highlight"><code>{% ref 'fig:style-guide-figure' %}
+</code></pre></p>
+<p>Both the label and the reference will output something like "Figure 1".
+The extension is configured to look for a valid "label kind" before the <code>:</code> and will raise an error if it doesn't find one.
+Currently, the extension only supports <code>fig:</code> but new kinds of labels are easy to add in <code>build.py</code> as we need them.</p>
+<p>Labels must only be defined once and all <code>ref</code> tags should refer to defined labels.
+However, labels can be referred to before they are defined.</p>
+<p>The extension does not yet support cross-file references.
+Support for that is coming.</p>
+
+  
+          
+          
+        </div>
+        <footer id="bottom-bar">
+          
+          
+        </footer>
+      </div>
+    </div>
+  </body>
+</html>

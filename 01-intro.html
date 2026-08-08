@@ -1,0 +1,872 @@
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <title>Introduction &ndash; Distributed Systems: Principles and Practice</title>
+
+    
+<script>
+  var notes = true;
+</script>
+
+
+    <!-- Polyfill (fakes modern web APIs on older browsers; load first) -->
+    <script src="/book/third-party/polyfill/js/polyfill.min.js"></script>
+
+    <link rel="stylesheet" type="text/css" href="/book/third-party/normalize/normalize.css">
+
+    <!-- Fonts -->
+    <link rel="stylesheet" type="text/css" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:400,400italic,600">
+    <link rel="stylesheet" type="text/css" href="https://fonts.googleapis.com/css?family=Inconsolata:400,700">
+    <link rel="stylesheet" type="text/css" href="/book/third-party/fontawesome/css/all.min.css">
+
+    <!-- jQuery -->
+    <script src="/book/third-party/jquery/js/jquery.min.js"></script>
+
+    <!-- Highlight -->
+    <link rel="stylesheet" type="text/css" href="/book/third-party/highlight/css/highlight-default.css">
+
+    <!-- SVG -->
+    <script src="/book/third-party/svg/js/svg.min.js"></script>
+
+    <!-- MathJax -->
+    <script>
+      window.MathJax = {
+        tex: {
+          // Allow $ to delimit math mode, to make the behavior inside and outside markdown blocks
+          // the same.
+          inlineMath: [['$', '$'], ['\\(', '\\)']]
+        }
+      };
+    </script>
+    <script src="/book/third-party/mathjax/tex-chtml.js"></script>
+
+    <!-- First-party static resources -->
+    <script src="/book/js/main.js"></script>
+    <script src="/book/js/jrw-svg.js"></script>
+    <script src="/book/js/trace-visualization.js"></script>
+    <script src="/book/js/notes.js"></script>
+
+    <link rel="stylesheet" type="text/css" href="/book/css/main.css">
+
+    
+  </head>
+
+  
+  
+
+  <body>
+    <div id="wrapper">
+      <nav id="sidebar"><ol start="0">
+        
+        
+          
+            
+          
+            <a href="/book/preface.html">
+          
+          <li>Preface</li>
+          
+            </a>
+            
+          
+        
+          
+        
+          
+            
+          
+            <a href="/book/01-intro.html">
+          
+          <li>Introduction</li>
+          
+            </a>
+            
+              <div class="toc">
+<ul>
+<li><a href="#reasoning-about-distributed-systems">Reasoning About Distributed Systems</a><ul>
+<li><a href="#muddy-foreheads">Muddy Foreheads</a></li>
+<li><a href="#two-generals-paradox">Two Generals Paradox</a></li>
+</ul>
+</li>
+<li><a href="#why-distributed-systems">Why Distributed Systems?</a></li>
+</ul>
+</div>
+
+            
+          
+        
+          
+        
+          
+            
+          
+            <a href="/book/02-foundations.html">
+          
+          <li>Foundations</li>
+          
+            </a>
+            
+          
+        
+          
+        
+          
+            
+          
+            <a href="/book/rpc.html">
+          
+          <li>Remote Procedure Call</li>
+          
+            </a>
+            
+          
+        
+          
+        
+          
+            
+          
+            <a href="/book/primary-backup.html">
+          
+          <li>Primary-Backup Replication</li>
+          
+            </a>
+            
+          
+        
+          
+        
+          
+            <div class="sidebar-section">
+            <span class="sidebar-section-header">Consensus</span>
+            
+              
+          
+            <a href="/book/distributed-objects.html">
+          
+          <li>Distributed Objects</li>
+          
+            </a>
+            
+          
+        
+            
+              
+          
+            <a href="/book/consensus.html">
+          
+          <li>Consensus and State Machine Replication</li>
+          
+            </a>
+            
+          
+        
+            
+            </div>
+          
+        
+          
+            
+          
+            <a href="/book/glossary.html">
+          
+          <li>Glossary</li>
+          
+            </a>
+            
+          
+        
+          
+        
+        
+          
+          
+            <a href="/book/style-guide.html">
+          
+          <li>Style Guide</li>
+          
+            </a>
+            
+          
+        
+        
+      </ol></nav>
+      <div id="main-column">
+        <header id="top-bar">
+          <i class="fa-solid fa-bars" id="sidebar-button"></i>
+          <h1 class="book-title"><a href="/book/">Distributed Systems: Principles and Practice</a></h1>
+        </header>
+        <div id="content">
+          <h1>Introduction</h1>
+          
+          
+  
+<p>“When experts are wrong it's often because they are experts on an earlier version of the world.” - Paul Graham</p>
+<div class="marginnote">
+What is a distributed system?
+</div>
+<p>A <strong>distributed system</strong> is a set of physically separate
+computers working together to provide some useful computation. 
+The computers working together may be geographically dispersed, 
+spread across different countries or even continents, 
+or physically nearby, such as adjacent servers in the same data center. 
+Both are distributed systems as we discuss them in this book.</p>
+<div class="marginnote">
+What is the difference between a distributed application and a distributed service?
+</div>
+<p>Two closely related concepts are <strong>distributed applications</strong> (such as Google
+Maps and many others) and <strong>distributed services</strong> 
+(such as Amazon Cloud or Microsoft Azure). 
+A <strong>distributed application</strong> is a user-facing distributed system, 
+often split between some code running on the user's device
+and other code running on the application provider's computers.
+A <strong>distributed service</strong> is a distributed system 
+used by other distributed systems to get their work done.</p>
+<p>Using multiple computers, either nearby or geographically remote, 
+raises several difficulties:</p>
+<ul>
+<li>Each computer operates independently of the other computers
+participating in the computation.</li>
+</ul>
+<div class="marginnote">How can data be stale?</div>
+<ul>
+<li>Computers in a distributed system typically do not have direct 
+access to each other's memory. Since communication takes time, 
+any information one computer 
+receives about another's state could be <strong>stale</strong>, or out of date,
+by the time it receives and acts on it. Resource sharing is also harder
+when application state needs to be moved between machines, rather than 
+simply using different cores on the same machine.</li>
+</ul>
+<div class="marginnote">What is a partial failure?</div>
+<ul>
+<li>
+<p>One or more computers may crash
+during the computation, while others remain operational. These failures
+can be due to software or hardware faults, or power failures. Indeed,
+the larger the distributed system and the longer the computation lasts,
+the more likely such a <strong>partial failure</strong> will occur. Many distributed systems
+are so large that dealing with partial failures is the common case.</p>
+</li>
+<li>
+<p>Network communication between computers 
+is itself implemented by a distributed system, subject to its own 
+complex partial failure modes.</p>
+</li>
+</ul>
+<h2 id="reasoning-about-distributed-systems">Reasoning About Distributed Systems</h2>
+<p>How can we produce useful and correct computations despite these issues?
+A key step is to carefully reason about the possible system states and 
+transitions. To provide some intuition for that reasoning, we give
+two simplified examples, the first due to Joseph Halpern
+and the second popularized by Jim Gray.</p>
+<h3 id="muddy-foreheads">Muddy Foreheads</h3>
+<p>Suppose we have a classroom of young children.  The children are, 
+as most children are of a certain age, smart, attentive, and well-meaning. 
+To avoid distractions, their teacher collects their smartphones at the 
+beginning of the day and has removed any mirrors from the classroom. </p>
+<p>After playing outside during recess after a rainstorm, some of the children 
+have some mud on their foreheads. 
+Before washing up, the children 
+are instructed to come in quietly and sit in a circle,<br />
+illustrated below </p>
+<p><img alt="Figure 1.1" src="/book/figures/muddy.png" /> </p>
+<p>where Alice and Bob happen to be the ones with mud on their 
+foreheads.  The teacher says everyone please 
+look at everyone else around the circle and then close your eyes. 
+Once everyone's eyes are closed, the teacher says, without speaking or
+communicating with each other, please raise your 
+hand if you are certain you have mud on your own forehead.  Having
+given everyone a chance to raise their hand, the teacher says 
+keeping your hand raised if it is raised, now everyone open your eyes.</p>
+<p>Quite obviously, no child raises their hand.  How could they, if they 
+can't see their own forehead?  Further, if the teacher repeats the task - 
+get everyone to look around again at everyone else, close their eyes, 
+raise their hands if they are sure they have mud on their forehead, and 
+then open their eyes - still no one will raise their hand. 
+Indeed, it doesn't matter how stubborn the teacher is. No matter how many
+times they repeat the test, no one will raise their hand.</p>
+<p>Suppose now the teacher changes the game slightly. The teacher says
+out loud to everyone, some of you have mud on your forehead. Now let's
+repeat the experiment.  Can a child raise their hand now?  Yes, in the special
+case where only one child has mud on their forehead. If a child sees that 
+no one else has mud on their forehead, the teacher has given them useful
+information and so they can answer correctly.</p>
+<p>What if more than one child has mud
+on their forehead?  Then the teacher's statement that someone has mud
+on their forehead appears to add no new information to what the 
+children already know - they can all see that someone else has mud on their forehead.</p>
+<p>Nevertheless, if the teacher repeats the task enough times,
+eventually every child with mud on their forehead will raise their hands,
+and indeed, they will all do so at the same time.
+How is that possible if the teacher hasn't told the children anything
+new? Remember, the children are all smart, attentive, and well-meaning.  If there are only two
+children with mud on their forehead, then two of the children will see
+that someone else has mud on their forehead, but during the first round
+they didn't immediately raise their hand, then the only possible
+explanation is that they themselves must have mud on their forehead.
+If there are three children with muddy foreheads, no one
+will raise their hand during the first two rounds, but all three
+will raise their hands in the third round, using similar logic.
+We can extend this to any number of muddy foreheads by induction
+on the number of rounds.</p>
+<p>While the teacher didn't say anything that everyone didn't already
+know, the teacher did add something crucial - knowledge that every
+other child knows that some children have muddy foreheads. One can
+imagine a slightly different scenario where the teacher whispered to
+each student in turn that there was someone with a muddy forehead.
+With more than one child with a muddy forehead, we would be stuck
+- no one would raise their hand, no matter how many times we try,
+because there is no basis to reason from the actions of the
+other children.</p>
+<p>There is a difference between knowledge (I can directly see some 
+other child has a muddy forehead) and knowledge of what others know.
+The teacher told everyone that some child has a muddy forehead,
+and so now every child knows everyone knows that some child has 
+a muddy forehead. This lets each child reason on that basis
+that they must have a muddy forehead, if indeed that is true.</p>
+<p>This difference between reasoning about what one computer knows,
+and what that computer knows about what other computers know,
+is central to the study of distributed systems. </p>
+<h3 id="two-generals-paradox">Two Generals Paradox</h3>
+<p>Almost all networks in practice sometimes fail to deliver some of their 
+messages. At a physical level, communication between
+omputers over distance is encoded as a signal over a noisy channel. 
+WiFi, cellular communication, Ethernet, and fiber optic links all 
+have noise, and they use various error correction systems to detect
+and discard corrupted data packets. Even with error detection and correction,
+the amount of noise fundamentally limits the maximum rate 
+that we can send information over the channel. Put another way,
+when networks are designed to send as much data as fast as possible,
+as most are, we must expect some likelihood of packet loss.</p>
+<p>The potential for data loss can make it difficult to coordinate 
+the participants in a distributed system. To illustrate
+this, consider two generals, encamped on two separate hills, who
+need to coordinate an attack on the opposing army in the valley. 
+This is illustrated below </p>
+<p><img alt="Figure 1.2" src="/book/figures/generals.png" /> </p>
+<p>with generals Alice and Bob. (Sadly the smart, attentive, and
+well-meaning children in the previous example have grown 
+up to be militaristic.)
+If they both attack at the same time, the attack will succeed, and 
+otherwise it will fail.  Further suppose that this is in the age
+before cellphones, it is a foggy day so they can't
+use signal flares, and the distance between the hills is too far 
+for sound to travel reliably. The only way for Alice and Bob
+to communicate is to send encrypted messages by foot through the 
+enemy controlled region. Some of the messengers may be captured,
+but possibly some of them will get through.</p>
+<p>Assuming Alice and Bob had not previously agreed on a time to attack, 
+can we devise a way for them to agree on a course of action?
+Suppose we start by having Alice send Bob a message,
+suggesting a time for the attack. Suppose the message gets through
+to the other side. This is shown below  </p>
+<p><img alt="Figure 1.3" src="/book/figures/first.png" /> </p>
+<p>Can they now both attack? Obviously not, since
+Alice does not know if Bob received the message. The message
+might not have arrived.</p>
+<p>We can try to fix this by having Bob send a message back to Alice in reply.
+Suppose that message gets through as well, shown below.</p>
+<p><img alt="Figure 1.4" src="/book/figures/second.png" /></p>
+<p>Can they now both attack?
+At this point, Alice knows that Bob got the original message, 
+but Bob does not know if its reply message was received. 
+If Alice won't attack unless Alice receives the reply, 
+then Bob can't be sure that Alice will attack, e.g., if the
+reply message was lost. </p>
+<p>We can try to fix this by having Alice send a reply message
+in response to Bob's reply. Suppose that message gets through.</p>
+<p><img alt="Figure 1.5" src="/book/figures/third.png" /></p>
+<p>Can they now both attack? We leave to the reader to convince 
+themselves that no amount of back and forth can 
+guarantee that both sides have
+the same knowledge. This is true even if, as in the example, 
+all messages are in fact delivered.
+The mere possibility that the messages might not reach the
+target makes it impossible to achieve joint agreement, unless the two
+parties already had agreed on the outcome before they started.</p>
+<p>These two examples show is that common knowledge - what everyone
+knows everyone knows - is a powerful tool for building systems, but
+in a system where participants use a lossy communication network to learn about each other's
+state, common knowledge is only possible about <em>past</em>, 
+and not <em>current</em>, states of the system. </p>
+<h2 id="why-distributed-systems">Why Distributed Systems?</h2>
+<p>If reasoning about distributed systems is more difficult than reasoning
+about sequential systems, we could ask:
+why do we need distributed computers in the 
+first place?  After all, writing useful and correct programs is, if not <em>easy</em>
+then at least <em>easier</em>, if the program runs on only one computer rather than
+when it is spread over many computers.  If programming distributed computers 
+is hard, maybe we just shouldn't do it.</p>
+<p>One answer is that the concepts described in this book 
+enable programmers <em>using</em> distributed systems concepts
+to operate at a simpler, higher level of abstraction, even if 
+that makes the task of the programmers <em>developing</em> those abstractions
+more difficult.  There are usually more users of a distributed system
+than builders of the system, so this tradeoff is often worthwhile.
+For example, one of abstractions we discuss in this book, linearizability, is complex
+to implement in the presence of geographic distribution, caching,
+and server or network failures.  Once implemented, however, linearizability
+provides a conceptually simple model for programmers using the abstraction
+to develop distributed applications. </p>
+<p>Just a few decades ago, almost all software was "shrink wrap" -
+printed on physical media and shipped to the end user to install and run
+on a single machine. That is not true anymore. 
+Almost all modern software - both applications and systems - are 
+distributed systems:</p>
+<ul>
+<li>Group collaboration systems, e.g., Github and Google Docs.</li>
+<li>Video streaming systems, e.g., TikTok or YouTube.</li>
+<li>Group messaging applications, e.g.,  WhatsApp and Signal.</li>
+<li>Online marketplaces, e.g., Amazon and Etsy.</li>
+<li>Advertising platforms, e.g., Google Ad Manager.</li>
+<li>Enterprise customer management, e.g., Salesforce.</li>
+<li>Travel booking sites, e.g., Booking.com and Expedia.</li>
+<li>Global navigation software, e.g., Google Maps and Uber.</li>
+</ul>
+<p>Even solitaire games - the most standalone thing one could imagine -
+now often have a part of their functionality that is distributed,
+if they are advertising supported, maintain user statistics across multiple
+devices, or update software automatically. </p>
+<p>There are several reasons why almost all modern software is distributed: </p>
+<ul>
+<li>
+<p>People are physically distributed, but want to be connected, 
+so the applications that they use to communicate and share information 
+also need to be distributed. 
+Email got its start as a way for users with accounts on the same 
+machine to share information. Of course, that is limited:<br />
+what if you want to send an email to someone at another school
+or in a different location? Email became one of the earliest 
+distributed systems because you need computers to work together
+to provide a global email system.
+Of course, today we have many different ways for people to use
+computers to stay connected, beyond email; many of these, such as instant messaging, 
+also got their start as a way to communicate among users on a single system,<br />
+before making the leap to being distributed.</p>
+<p><div class="marginnote"> What is the network effect?  </div>
+The benefit of distributed systems <em>to each user</em> often increases 
+with the number of users.  This is called the <strong>network effect</strong>,
+and was first observed for telephones. A telephone is more
+valuable the more people who have telephones.  The same can be said 
+about email, social networking, and other information 
+sharing applications. By extending the reach of information sharing 
+applications to everyone on the planet, 
+distributed applications can become much more valuable to their users
+than their single machine counterparts.</p>
+</li>
+</ul>
+<div class="marginnote">
+What is a data center?
+</div>
+<ul>
+<li>
+<p>Information starts out distributed, but needs to be merged
+and redistributed for it to have the most value. 
+A <strong>data center</strong> is a place for the centralized computer
+processing and serving of data. 
+Data processing often follows the network effect, in that the more
+data that is analyzed together, the more valuable the result. </p>
+<p>Initially, data centers were single computers - often
+whatever was the largest and fastest computer of the time. 
+They became distributed systems as a way to cost-efficiently build 
+even larger and faster systems to keep up with the exponential increase
+in the data to be aggregated and analyzed, first unleashed by standardized 
+web protocols for publishing and retrieving data on a worldwide scale,
+but continuing today as distributed applications themselves collect
+data to improve their operations.</p>
+<p>By collecting data in one place, we make it easier to extract useful
+information. For example, the choice of which pages to present 
+in response to a search query is based on the graph structure
+of the interrelationships between web pages; Google's PageRank algorithm
+successively approximates the importance of each page based on the importance
+of the pages with links to that page.
+More recently, rapid advances in machine learning and artificial intelligence
+are enabled by training models on the widest possible variety of data.
+Collecting that data in one place makes machine learning analyses more efficient.</p>
+<p>Many useful applications are only economically feasible if their development 
+and operational costs can be prorated over the largest possible set of users, 
+that is, at global scale.
+For example, it reportedly costs Google Maps more than a billion dollars
+each year to run, manage, and update its maps.
+Of course it is not just maps: many useful applications assemble and 
+organize huge streams of distributed information; process the data at 
+a scale that far exceeds what any single computer could handle; and 
+serve their data to large numbers of users spread around the planet. </p>
+</li>
+<li>
+<p>Data isn't only collected, it also gets redistributed. 
+Most content - news articles, photos, YouTube or streaming videos, 
+restaurant reviews - has a one to many 
+distribution pattern, with each source consumed by many users. 
+Indeed, application software updates, such as to repair a potential 
+security vulnerability, are automatically distributed to every device,
+rather than needing to be shipped on physical media and installed by the user.</p>
+<p><div class="marginnote">
+What is a content distribution network and where is it?
+</div>
+For many applications, the time to fetch data from a centralized data center - e.g., 
+the place where it was created or stored - adds noticeably to 
+user response time.  Serving data centrally also adds considerably to 
+the cost of distribution, as content needed by many users is downloaded by 
+each user in turn over long distances.  This has led to the creation of a special type of 
+distributed system called a <strong>content distribution network</strong> that aims 
+to place and serve copies of data near to the users that want that data,
+to reduce latency and transmission costs.
+Some companies like Google and Meta are reported to maintain servers - called
+<strong>points of presence</strong> - in thousands of locations around the globe to ensure 
+that content is almost always nearby the users who want to access that content.
+In turn, we need distributed systems concepts to keep those copies up to date 
+when the underlying data changes.</p>
+</li>
+<li>
+<p>Computers can fail, but users want systems that are always up.
+Leslie Lamport once quipped that a distributed system
+is one where you can't get your work done because some machine you have
+never heard of has failed.  If a machine that has the only copy
+of some data that you need, and it crashes, there is little to do
+but wait until it comes back online. By spreading data across
+many systems, distributed systems can make this problem much worse.
+If your work depends on a large number of computer hardware and software systems all 
+functioning correctly at the same time, the user-visible uptime - how frequently 
+the system is usable - will be no better (and often a lot worse) than the 
+uptime of its flakiest component.  </p>
+<p>Today, user-visible failures of the most popular applications are so rare that it can
+make the news if a widely used application is offline even for an hour.<br />
+What has changed?  Although distributed systems have many components 
+that can fail, we can use distributed systems concepts to mask failures 
+so that users don't notice them.  When one computer fails, another can step in to do its job.
+With enough spares, we can continue to provide service almost 
+without regard for how many simultaneous failures there are. 
+The distributed systems protocols to mask failures discussed in this book 
+are among the most complex algorithms in all of computer science, 
+but they are also among the most commercially important.</p>
+</li>
+</ul>
+<div class="admonition note">
+<p class="admonition-title">How frequently do servers fail?</p>
+<p>Because distributed systems can mask failures, it can be difficult to obtain
+accurate data on the types and frequency of failures affecting distributed systems.<br />
+However, in 2009, Jeff Dean published data on this, at the cluster level within
+Google's data centers.  At the time, a cluster was a group of several tens of thousands
+of servers, connected together with a high speed network and with its own dedicated 
+disk storage.  Each cluster was large enough to do substantial data processing tasks
+on its own, such as to compute Google's search index or to serve a substantial number
+of gmail clients. A large data center might have several such clusters. This organization
+is still used today.  The numbers reported are no longer current, as different 
+distributed systems companies have become better over time at reducing the number of 
+these types of errors; however, all of these types of errors still do occur in practice.</p>
+<p>For a newly installed cluster, over the course of its first year, Dean reported that 
+Google experienced failures of all sorts:</p>
+<ul>
+<li>
+<p>One half (that is, a 50% chance) of a cluster-wide overheating event that required powering
+    down most machines in the cluster within a few minutes to avoid damaging the hardware,
+    and took 1-2 days to bring the cluster back to full operation. Collecting servers in one
+    place is more efficient, but it also makes cooling a challenge, as a data center can
+    generate a vast amount of heat. If the cooling system fails, servers must be powered off in 
+    order to avoid permanent damage. </p>
+</li>
+<li>
+<p>One failure of a power distribution unit (PDU) affecting 500-1000 machines. Power must
+    be distributed from the utility down to each server, and this distribution network can fail.
+    Recovery from a PDU failure can take six hours.</p>
+</li>
+<li>
+<p>One rack move affecting 500-1000 machines. From time to time the machines in a data center
+    might need to be moved from one part of the data center to another. This is an example
+    of <strong>planned maintenance</strong> where the distributed applications running on those systems
+    are given sufficient warning of the planned change, to allow them to migrate work onto
+    other servers unaffected by the outage.</p>
+</li>
+<li>
+<p>One network rewiring, affecting a rolling 5% of the machines over a multi-day span. The
+    networks connecting servers can also need to be upgraded, and generally that disrupts
+    those servers from communicating during the disruption. This is another example of a
+    planned maintenance operation.</p>
+</li>
+<li>
+<p>Twenty rack failures.  A <strong>rack</strong> is a set of 40-80 servers housed in a standardized column.
+    Servers within a rack may individually fail, but sometimes the entire rack can become 
+    disconnected if the network switch fails for that rack fails. Sometimes the disconnection
+    is partial - the nodes within the rack may be ablet to communicate with each other, but not
+    to the rest of the cluster or data center.</p>
+</li>
+<li>
+<p>Five rack networks go "wonky." A considerable problem in data centers are <strong>gray failures</strong>.
+    A gray failure is when a node or network continues to operate, but at far below its normal 
+    operating parameters.  An example is when the network switch suddenly starts dropping half of 
+    the packets to or from every server in the rack; some data gets through but only with vastly
+    lower throughput.</p>
+</li>
+<li>
+<p>Four network reconfiguration operations that go awry and cause substantial, temporary packet 
+    loss for a period of a half hour.</p>
+</li>
+<li>
+<p>Three router failures that disconnect the data center from the outside world for an hour.</p>
+</li>
+<li>
+<p>Twelve router reloads that also disrupt external connectivity, but only for a few minutes.</p>
+</li>
+<li>
+<p>1000 individual server machine failures. As we mentioned, we can use replication to
+    hide these failures. Generally, the replacement can be any server in the rack (if the failure
+    is limited to one server), or to a server in a different rack (if the network switch fails), 
+    in a different cluster (if the cluster power distribution unit fails),
+    or in a different data center (if the data center power or cooling fails, or 
+    connectivity to that data center is lost).</p>
+</li>
+<li>
+<p>Thousands of hard drive failures. Disk storage is also a distributed system that needs to 
+    be organized to be resilient to failures.  Disk storage can also experience gray failures,
+    where the disk is partially functional but at much lower througput.</p>
+</li>
+</ul>
+<p>There are also a number of documented cases of rarer failures, such as DRAM sometimes 
+returning data different from what was originally stored there, CPUs that sometimes
+produce unexpected results when executing certain types of rare instructions, 
+wide area network cables that are damaged by someone digging where they weren't
+expected to, and so forth.  In other words, anything that can go wrong, probably will at 
+some point. Distributed systems need to plan for and gracefully handle all of these 
+types of failures, in order to mask them from end users.</p>
+</div>
+<ul>
+<li>
+<p>Computers are finite, but demand for computing is elastic. 
+The first commercial web search engines were built using the 
+fastest multicore servers of the time, with a copy of the 
+data replicated on several computers to spread load in case one of them failed. 
+Today, a single search query can involve lookups spread over hundreds
+or even thousands of computers, because the computation and storage
+needed far outstrips the capacity of even the largest servers. 
+When the most popular applications have billions of users, it isn't
+feasible to implement them without relying on distributed systems.</p>
+<p><div class="marginnote">
+What is incremental scalability?
+</div>
+Application load is not static. Developers are continually 
+adding new features that require additional computation and storage, 
+attracting more users who in turn require even more resources.
+Distributed systems provide a way for systems to have <strong>incremental
+scalability</strong> - the ability to add capacity to a computer system 
+in small increments on an as needed basis. Indeed, 
+most applications see demand that ebbs and flows across the day.
+There is about a factor of three difference between the 
+minimum and maximum number of people who are awake at any 
+point during the day. So we need systems that not only can scale up
+with added demand, but also scale down and turn off their computing resources 
+as demand wanes in order to save energy.</p>
+</li>
+<li>
+<p>Computers are expensive, but distributed systems can reduce those costs.
+It is often cheaper and simpler to build large 
+scale systems out of many simpler small computers than it is to build
+a few very large scale systems of the same capacity. The same goes for 
+storage - it is more expensive to build one very large disk than many smaller
+disks with the same aggregate capacity.
+There is a rule of thumb in computer manufacturing that 
+every factor of two increase in volume decreases the cost of 
+manufacturing by 10%.  One reason is that engineering development costs
+can be spread over a larger number of units; another is that it is easier
+to learn how to improve systems when you have a lot of examples to learn from.
+Companies spend more half a trillion 
+dollars per year on data center servers, storage, and networks, 
+with about 15 million servers manufactured each year. 
+Replacing those with a much smaller number of more powerful machines is 
+perhaps possible, but it would lead to much higher costs.</p>
+<p>As we mentioned above, there is also a need
+to be able to incrementally increase resources as an application
+adds users and features.  By building systems out of a large
+number of small components, we can provision systems with just the
+resources they need at the moment, rather than needing to purchase
+a single, much larger system in advance of potential future growth,
+leaving much of its capacity wasted until it is needed. This also reduces costs.</p>
+</li>
+<li>
+<p>Shared memory is convenient, but it increases the blast radius for software errors.
+There is a tradeoff, of course. It is often easier to program
+a single, shared-memory computer than it is to coordinate the various 
+parts of a distributed system, especially when some
+of those parts can fail or communicate over a network that can also
+have complex failure modes.  With shared memory, work can be easily shifted
+between cores, increasing resource efficiency when demand for any single application 
+is variable.</p>
+<p>However, when there is a software failure, such as an illegal pointer dereference,
+how do we know what has been affected? The true cause of the error might have occurred much
+earlier, and only detected after several other data structures have been corrupted.
+When an application fails, the operating system generally wipes the application's memory on
+that machine and restarts it from a prior checkpoint.
+What if the operating system itself has a memory error?
+The operating system kernel has the ability to overwrite any part of any application's memory
+and disk storage; it needs that power in order to be able to set up and manage application memory. 
+In most data centers, any operating system failure requires resetting all of the applications
+on that server. Because distributed systems do not share memory, other copies of the application
+running elsewhere can continue to service users while the failing copy is repaired.</p>
+<p>It is not impossible to imagine that we could build very large systems with the ability
+to isolate application and operating system failures to an individual core so that just that 
+core is affected by a failure; that are constructed out of small, replaceable components
+to manage costs; and that have the ability to incrementally expand as needs or workloads change.
+Such a system would need an internal architecture very similar to the distributed systems we describe
+in this book.</p>
+<p>Even if we could somehow run all of
+Google or Meta's applications on a few giant shared-memory computers, that 
+would mean that any failure would cause a noticeable drop in the capacity of the 
+system to serve users. For the most popular applications, it is common to spread
+the work across many data centers, so that even losing an entire data center (a rare, but
+not unpredictable event) will not cause user-visible application slowdowns.  Indeed,
+Amazon is reported to intentionally (and randomly) disconnect one of the data centers
+supporting its e-commerce site on a regular basis, as a way of testing whether the
+error recovery in that case really works. It would be disastrous for Amazon for a data
+center to fail during Black Friday and only then discover that the error recovery code
+was flawed. </p>
+</li>
+<li>
+<p>Mobile devices are power limited, but computation and state can be offloaded.
+While distributed applications have become more complex, the devices we use to 
+access those applications have become smaller, lighter, and power constrained. 
+Most popular applications have responded by splitting their functionality 
+between a "frontend" that runs on the user device and a shared "backend" that 
+runs on centralized servers and provides common functionality for all users of that application.<br />
+Indeed, the modern smartphone would be much less useful without a 
+way for applications to call on services beyond what fits on the device.
+Because users of any one application may be geographically distributed, the backends
+of many applications are implemented as a distributed system running across a set of 
+data centers, shared among the users of that application.  </p>
+<p>Another common feature for many smartphone applications is that they
+maintain context when you switch devices - if your smartphone 
+needs to be recharged, you can use a tablet instead.
+This means that a copy of application state must be stored off the device, 
+e.g. in a data center, not solely in the file system of the specific device. 
+When switching devices, the user sees an up to date view of the same state.
+A more general case is provided by collaboration software like Google Mail 
+or Google Docs, where users can edit in disconnected mode, with data 
+re-synchronized through the data center once connectivity is restored.
+Any device with access to the underlying data sees the same view.
+This also needs distributed systems concepts to ensure that the re-synchronization
+occurs correctly and without anomalies from the user's point of view.</p>
+<p><div class="marginnote">
+What is REST?
+</div>
+A common paradigm for mobile applications is called <strong>REST</strong>
+for REpresentational State Transfer.  With REST, the application frontend
+running on the user's device is intentionally kept simple and focused on 
+user-interface issues, while the shared backend stores application state and implements 
+the bulk of the application logic.  As the user makes state changes, the 
+frontend pushes those changes to the backend (the representational state transfer).
+If the network connection drops (e.g., when a device goes out of WiFi range, it must
+reconnect over cellular), the device can reconnect and re-sync state without the user noticing.
+The frontend caches data to hide the extra latency of communicating with the backend, 
+while the backend uses distributed systems concepts for implementing
+the application logic in a fault tolerant manner.</p>
+<p>While REST may seem a step backward - why not use the computational capacity
+of the end user's device if it is available - it offers benefits to end users,
+application developers, and the companies that provide those applications,
+to a degree that more than makes up for the limitations of the REST programming model.</p>
+<p><div class="marginnote">
+What is cloud computing?
+</div>
+Google and Apple reportedly have more two million applications for download onto 
+a smartphone. Where do the backends for all these applications run? 
+<strong>Cloud computing</strong> allows companies (and users) to rent computing resources;
+an early use case was (and is) to host the backends of mobile and web applications. 
+By multiplexing many applications on the same physical infrastructure,
+this saves costs: resources unused by one application can be easily redirected to another, 
+and applications can request just the resources they need at the moment
+instead of each application needing to buy and maintain extra computers for its own 
+anticipated future demand. Cloud computing also centralizes system administration, 
+further lowering costs.</p>
+</li>
+<li>
+<p>Distributed programming is hard, but distributed systems enable 
+accelerated application development.
+In a famous paper in 1986, Fred Brooks Jr. claimed that there 
+was no "silver bullet" that would be able to improve the productivity of software developers
+by an order of magnitude.  Yet software today is almost incomparably more capable
+and useful than it was forty years ago.  The economy employs about ten times more 
+software developers today than it did when Brooks wrote his paper, but
+the improvement in software quality and reach is far more than what can be 
+explained by that factor alone.  It may be hard for anyone who didn't live through
+it to grasp, but sending an email cross-country in 1986 required the user 
+to identify (by hand!) a sequence of intermediate servers that would get the email 
+closer to the destination.  Computers used to crash and lose data on 
+a nearly daily basis. </p>
+<p>What accounts for this improvement in software quality, even as 
+almost all software has shifted to a distributed systems model where we need
+careful reasoning to understand whether systems work?
+Distributed systems can aid software development in ways that 
+more than make up for any additional complexity.<br />
+Brooks identified three concrete ways to improve
+software productivity: software reuse, rapid prototyping, and growing
+software organically by adding features only after they are being used.</p>
+<p>Distributed systems massively aid software development in all three
+dimensions.  (Brooks also mentions a fourth - hire better software developers;
+the astronomical stock valuations of companies building distributed systems
+makes it easier for them to afford the best software engineers.)</p>
+<p>First, the move to host application logic
+in the cloud has led to extensive software reuse.
+In the shrink wrap era, reusing a software library meant linking it
+in the same process as the main program. This required resolving any conflicts
+in how each library uses shared resources like the heap. It also requires
+ensuring the library works in all hardware and operating system 
+configurations where the application needs to run.
+Further, any software errors such as a misused pointer or missing error check 
+in one piece of code affects the reliability of the entire application. 
+The larger the codebase linked together, the more likely that a pointer error 
+will cause the entire application to fail.  Quality assurance was challenging 
+in the shrink wrap era for both the library developer and the application developer. </p>
+<p><div class="marginnote">
+What is Software as a Service (SaaS)?
+</div>
+A different model is to build and sell all types of 
+<strong>software as a service (SaaS)</strong>. In the SaaS model, both
+applications and the libraries they depend on are hosted as
+standalone services that use network communication to make requests
+of one another.  This makes software reuse much easier, as each 
+service is responsible for its own operating environment, including<br />
+how many resources to use, what other libraries to call, how to charge
+for the service, and so forth.
+Errors are limited to each service by design, with both the caller 
+and the callee programmed defensively to ensure that mistakes in one service
+don't cause downtime in another.  </p>
+<p>This approach enables code reuse on a massive scale.
+Meta, for example, reports that their applications rely
+on more than <em>forty thousand</em> shared services hosted inside
+Meta's data centers.</p>
+<p>Rapid prototyping is also easier with modern distributed systems.<br />
+The existence of extensive libraries of shared code 
+allows new applications to be started with minimal effort.
+There is no longer a need to integrate and ship physical software, 
+as in the shrink wrap era.  Indeed, this book was written as a 
+rapid protyping effort, with chapters shared with students as they were 
+being written.</p>
+<p>Perhaps the greatest win is the ability to grow software organically,
+learning from experience in order to understand which features are most
+important.  Software as a Service systems enable continuous integration and
+deployment, where software is developed, tested, and deployed to users in a matter
+of days. Users can provide feedback by interacting with a working prototype,
+rather than a description of the concept of the feature, with lessons applied
+quickly.  By contrast, in the shrink wrap era, software releases took months or even years, requiring
+a top down design with careful planning and staging of features. </p>
+</li>
+</ul>
+
+
+  
+          
+          
+        </div>
+        <footer id="bottom-bar">
+          
+            <a class="left" href="/book/preface.html" title="Preface"><i class="fa-solid fa-left-long"></i></a>
+          
+          
+            <a class="right" href="/book/02-foundations.html" title="Foundations"><i class="right fa-solid fa-right-long"></i></a>
+          
+        </footer>
+      </div>
+    </div>
+  </body>
+</html>

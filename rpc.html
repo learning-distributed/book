@@ -1,0 +1,692 @@
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <title>Remote Procedure Call (RPC) &ndash; Distributed Systems: Principles and Practice</title>
+
+    
+
+    <!-- Polyfill (fakes modern web APIs on older browsers; load first) -->
+    <script src="/book/third-party/polyfill/js/polyfill.min.js"></script>
+
+    <link rel="stylesheet" type="text/css" href="/book/third-party/normalize/normalize.css">
+
+    <!-- Fonts -->
+    <link rel="stylesheet" type="text/css" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:400,400italic,600">
+    <link rel="stylesheet" type="text/css" href="https://fonts.googleapis.com/css?family=Inconsolata:400,700">
+    <link rel="stylesheet" type="text/css" href="/book/third-party/fontawesome/css/all.min.css">
+
+    <!-- jQuery -->
+    <script src="/book/third-party/jquery/js/jquery.min.js"></script>
+
+    <!-- Highlight -->
+    <link rel="stylesheet" type="text/css" href="/book/third-party/highlight/css/highlight-default.css">
+
+    <!-- SVG -->
+    <script src="/book/third-party/svg/js/svg.min.js"></script>
+
+    <!-- MathJax -->
+    <script>
+      window.MathJax = {
+        tex: {
+          // Allow $ to delimit math mode, to make the behavior inside and outside markdown blocks
+          // the same.
+          inlineMath: [['$', '$'], ['\\(', '\\)']]
+        }
+      };
+    </script>
+    <script src="/book/third-party/mathjax/tex-chtml.js"></script>
+
+    <!-- First-party static resources -->
+    <script src="/book/js/main.js"></script>
+    <script src="/book/js/jrw-svg.js"></script>
+    <script src="/book/js/trace-visualization.js"></script>
+    <script src="/book/js/notes.js"></script>
+
+    <link rel="stylesheet" type="text/css" href="/book/css/main.css">
+
+    
+  </head>
+
+  
+  
+
+  <body>
+    <div id="wrapper">
+      <nav id="sidebar"><ol start="0">
+        
+        
+          
+            
+          
+            <a href="/book/preface.html">
+          
+          <li>Preface</li>
+          
+            </a>
+            
+          
+        
+          
+        
+          
+            
+          
+            <a href="/book/01-intro.html">
+          
+          <li>Introduction</li>
+          
+            </a>
+            
+          
+        
+          
+        
+          
+            
+          
+            <a href="/book/02-foundations.html">
+          
+          <li>Foundations</li>
+          
+            </a>
+            
+          
+        
+          
+        
+          
+            
+          
+            <a href="/book/rpc.html">
+          
+          <li>Remote Procedure Call</li>
+          
+            </a>
+            
+              <div class="toc">
+<ul>
+<li><a href="#running-example-key-value-store">Running Example: Key-Value Store</a></li>
+<li><a href="#what-a-client-expects-about-rpcs">What a Client expects about RPCs</a></li>
+<li><a href="#naive-rpc-protocol">Naive RPC Protocol</a></li>
+<li><a href="#correctness-of-naive-rpc">Correctness of Naive RPC</a></li>
+<li><a href="#the-problem-with-drops-and-delays">The problem with drops and delays</a></li>
+<li><a href="#handling-drops-and-delays-via-retransmission">Handling drops and delays via retransmission</a></li>
+<li><a href="#duplicates">Duplicates</a></li>
+<li><a href="#handling-drops-again">Handling drops again</a></li>
+<li><a href="#rpc-protocol">RPC Protocol</a></li>
+<li><a href="#reducing-server-space-version-1">Reducing server space: version 1</a></li>
+<li><a href="#reducing-server-space-version-2">Reducing server space: version 2</a></li>
+<li><a href="#handling-multiple-clients">Handling multiple clients</a></li>
+<li><a href="#beyond-a-single-server-handling-node-failures">Beyond a single server: Handling node failures</a></li>
+</ul>
+</div>
+
+            
+          
+        
+          
+        
+          
+            
+          
+            <a href="/book/primary-backup.html">
+          
+          <li>Primary-Backup Replication</li>
+          
+            </a>
+            
+          
+        
+          
+        
+          
+            <div class="sidebar-section">
+            <span class="sidebar-section-header">Consensus</span>
+            
+              
+          
+            <a href="/book/distributed-objects.html">
+          
+          <li>Distributed Objects</li>
+          
+            </a>
+            
+          
+        
+            
+              
+          
+            <a href="/book/consensus.html">
+          
+          <li>Consensus and State Machine Replication</li>
+          
+            </a>
+            
+          
+        
+            
+            </div>
+          
+        
+          
+            
+          
+            <a href="/book/glossary.html">
+          
+          <li>Glossary</li>
+          
+            </a>
+            
+          
+        
+          
+        
+        
+          
+          
+            <a href="/book/style-guide.html">
+          
+          <li>Style Guide</li>
+          
+            </a>
+            
+          
+        
+        
+      </ol></nav>
+      <div id="main-column">
+        <header id="top-bar">
+          <i class="fa-solid fa-bars" id="sidebar-button"></i>
+          <h1 class="book-title"><a href="/book/">Distributed Systems: Principles and Practice</a></h1>
+        </header>
+        <div id="content">
+          <h1>Remote Procedure Call (RPC)</h1>
+          
+          
+  
+<p>As we saw in the previous chapter, distributed systems are designed to operate
+in faulty environments where messages can be dropped, duplicated, and delayed,
+and machines can crash or run at different speeds. This chapter begins our
+discussion of how to design systems to tolerate these faults.</p>
+<p>The nodes of a distributed system collaborate to solve a common problem. A
+very common activity in a distributed system is for one node to <em>request</em> that
+another node do something for it. For example, if you are watching Youtube
+shorts on your phone, then whenever you swipe down to the next video, your phone
+(your phone is a node!) sends a request to a server owned by Google (another
+node) to request the next video. Nodes sending other nodes requests is the bread
+and butter of a distributed system in action. At companies like Google, nodes
+collectively send billions of requests per second.</p>
+<p>The question we address in this chapter is: how does one node in a distributed
+system reliably send a request to another node, even in the presence of network
+failures? (This chapter does not discuss node failures. We will return to those
+in later chapters.)</p>
+<div class="admonition ednote">
+<p class="admonition-title">emichael@ comment</p>
+<p>We say that we don't discuss node failures but then we bring them up at the
+end of the next paragraph.</p>
+</div>
+<p>Asking another node to do something is somewhat analogous to a procedure call
+(also known as a function call or a method call) in non-distributed programming.
+The main difference is that the procedure is executed on a different "remote"
+node. This abstraction is known as a Remote Procedure Call (RPC), i.e., calling
+a procedure that runs on a separate machine. The "remoteness" makes an important
+difference: when a node invokes a remote procedure, a fault can occur in the
+middle of the invocation (e.g., the network could lose a message, or the server
+could crash), and the calling node needs to be prepared to handle that fault
+(e.g., by sending the request again).</p>
+<p>As we will see below, there are several nuances to handle in making this process
+reliable, so designing a protocol using RPCs ends up feeling quite different
+from organizing a single-node program into a set of procedures. The single-node
+programmer never has to think "But what happens if I call the function but the
+call never arrives?" That is exactly the kind of thinking required to design a
+reliable distributed system with RPCs!</p>
+<h2 id="running-example-key-value-store">Running Example: Key-Value Store</h2>
+<p>To make this concrete, we will discuss an example service called a <em>key-value
+store</em>, which exposes a map-like API to other nodes. An implementation of a
+key-value store might internally use a map data structure such as a red-black
+tree or hash table and make its functionality available to remote clients.
+Key-value stores are common in practice. They are frequently used, for example,
+as caches for intermediate results or to hold ad hoc data in a database.</p>
+<p>We will assume, without loss of generality, that the keys and values of the
+underlying map are strings. The map-like operations supported are:</p>
+<ul>
+<li><code>get(key)</code>: returns the current value associated with <code>key</code></li>
+<li><code>put(key, new_value)</code>: associates <code>new_value</code> with <code>key</code>; any previously
+  associated value is replaced</li>
+<li><code>append(key, more_value)</code>: updates the value associated with <code>key</code> to be the
+  old value with <code>more_value</code> appended to the end, and returns this updated value</li>
+</ul>
+<p>Also, we assume, again without loss of generality, that clients send only one
+request at a time; they must receive the reply to their previous request before
+sending the next request.</p>
+<h2 id="what-a-client-expects-about-rpcs">What a Client expects about RPCs</h2>
+<p>Let us now consider a client that wants to invoke the key-value store service
+over the network. When a client wants to invoke an operation, say <code>get("foo")</code>,
+it will need to send the server a message to request the operation. Since the
+server supports more than one procedure, the request message must specify which
+procedure the client wants to invoke. The message also includes any arguments to
+pass to the procedure. At a high level, the request message for <code>get("foo")</code>
+might look like this:</p>
+<p><img src="img/rpc-request.svg" width="95%" alt="A network diagram showing the client sending a request message to the server. The request message consists of the name of the procedure (&quot;get&quot;) and the arguments (&quot;key=foo&quot;)." /></p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>We describe messages abstractly by showing their logical content. In practice,
+messages are <em>serialized</em> into a format appropriate to be sent over the network.
+The format may be human readable (e.g., JSON) or not (e.g., protocol buffers).
+In practice, serialization formats must handle important issues of machine
+compatibility, such as a big endian machine communicating with a little endian
+machine, and language compatibility, such as a client written in Java
+communicating with a server written in Rust.</p>
+</div>
+<p>When the server receives a request message, it will use the information
+contained in the request message to invoke the corresponding procedure locally,
+passing in the requested arguments. For the request above, the server retrieves
+the value associated with key <code>"foo"</code>. Suppose this value is <code>"hello"</code>. The
+server then sends this return value back to the client in a response message,
+which will look something like this:</p>
+<p><img src="img/rpc-response.svg" width="95%" alt="A network diagram showing the server sending a response message to the client. The response message consists of the returned value &quot;hello&quot;." /></p>
+<p>When the client receives the response message, the procedure call is complete
+and the client can continue executing using the returned value.</p>
+<p>To summarize, a client invokes an RPC by sending a request message and then
+waiting for the server to send back a response message with the return value.</p>
+<p>The RPC protocol should allow clients to think about an RPC as if it was a local
+procedure call. In particular, the RPC protocol should satisfy the
+<em>single-client single-server sequential correctness</em> property:</p>
+<div class="marginnote">
+Later, we will introduce a more sophisticated correctness
+property called <i>linearizability</i>, which will also specify correct behavior in
+the presence of multiple concurrent requests and more than one client.
+</div>
+
+<div class="admonition note">
+<p class="admonition-title">Definition: Single-Client Single-Server Sequential Correctness</p>
+<p>If the system consists of one client and one server, and neither the client nor
+the server fail, and the client sends a sequence of requests one at a time,
+waiting for each response before sending the next request, then the sequence of
+responses agree with what would have happened if we had run the procedures
+locally rather than remotely.</p>
+</div>
+<p>This is a useful specification for client programmers because they can pretend
+that their code is not distributed, and that invoking an RPC is just like
+invoking a local procedure. Most programmers are already skilled at reasoning
+about local code, and this specification removes the need for distributed
+reasoning. As we will see throughout the book, supporting this abstraction in
+practice is much more complex on the server side, especially when there are
+multiple servers and servers can fail.</p>
+<h2 id="naive-rpc-protocol">Naive RPC Protocol</h2>
+<p>With single-client single-server sequential correctness in mind, let's now turn
+our intuition about request and response messages into a more precise
+description of a distributed protocol, which we call "Naive RPC".</p>
+<ul>
+<li>When the application layer wants to invoke an RPC, then the client sends a
+  request message with the procedure name and argument values to the server.</li>
+<li>When the server receives a request message, it executes the specified
+  procedure on the given arguments, and sends a response message containing the
+  return value back to the client.</li>
+<li>When the client receives a response message, it returns the value to the
+  application layer.</li>
+<li>We make the following assumptions:<ul>
+<li>Nodes do not fail.</li>
+<li>The application layer will not invoke another RPC until it receives
+  the return value from the previous RPC.</li>
+</ul>
+</li>
+</ul>
+<p>This is our first description of a distributed protocol. It primarily consists
+of describing what happens when certain events occur, which we call "event
+handlers". In an implementation, the event handlers become code that runs when
+the relevant event occurs. In general, if a certain event is not handled by a
+protocol description, it means it should be ignored. For example, if a Client
+receives a Request message (which should never happen), it ignores the event,
+because only the server executes requests in this protocol.</p>
+<h2 id="correctness-of-naive-rpc">Correctness of Naive RPC</h2>
+<p>One of our main goals with this book is to teach you to reason about programs
+where there are failures. Let's consider whether Naive RPC achieves its goal of
+single-client single-server sequential correctness when the network can arbitrarily delay,
+drop, duplicate and reorder messages. (We assume no node failures for now.)</p>
+<p>If the network delivers each message exactly once, then yes, the protocol is
+correct. But what happens when there are network errors? This protocol is
+horribly broken! Here are just a few ways:</p>
+<ul>
+<li>If any message is dropped, the client cannot make further progress.</li>
+<li>If the network duplicates a request message so that it is delivered twice, the
+  server will execute it twice, which is wrong for <code>append</code> since appending
+  something twice is different from appending it once.</li>
+<li>If a response message is duplicated and the second copy is delivered later,
+    then the client may believe that the reply is for some later request.</li>
+</ul>
+<p>We will fix all of these problems. Let's start with the first one.</p>
+<h2 id="the-problem-with-drops-and-delays">The problem with drops and delays</h2>
+<p>Consider the situation where the network drops or delays certain messages.</p>
+<p>First, suppose the network drops the client's request message.</p>
+<figure>
+<img src="img/rpc-drop-request.svg" width="95%" alt="A network timeline diagram showing the client sending a request message to the server, but the request message is dropped by the network before it arrives at the server." />
+<!--
+<figurecaption>
+</figurecaption>
+-->
+</figure>
+
+<p>In this scenario, the client will wait for a response from the server that will
+never come.</p>
+<p>Second, suppose the network delivers the client's request, but then drops the
+server's response.</p>
+<p><img src="img/rpc-drop-response.svg" width="95%" alt="A network timeline diagram showing the client sending a request message to the server. The request is delivered, and the server sends a response message, but the response message is dropped by the network before it arrives at the client." /></p>
+<p>Again, in this scenario the client will wait forever for a response.</p>
+<p>Finally, it's also possible that the request or the response message get delayed
+in the network.</p>
+<p><img src="img/rpc-delay-response.svg" width="95%" alt="A network timeline diagram showing the client sending a request message to the server. The request is delivered, and the server sends a response message, but the response message is delayed for a long time before it arrives at the client." /></p>
+<p>In this scenario, the client waits for a long time before the response arrives,
+but otherwise the system behaves correctly.</p>
+<p>All three scenarios involve the client waiting. In the case of the dropped
+messages, the client will wait forever. In the case of the delayed response, the
+client can wait for an arbitrarily long time, and the client has no way of
+knowing how long it should wait. Until the delayed response arrives, the client
+does not know whether a message was dropped or merely delayed. In other words,
+while it is waiting, the client cannot distinguish the three scenarios.</p>
+<p>But notice one very important difference among the scenarios: in second two
+scenarios, the request was executed by the server, but in the first scenario,
+the request was never received by the server, so it was not executed. The client
+has no way to tell the difference between these two cases! This presents a major
+challenge for designing systems that tolerate network drops and delays. Clients
+must be aware of the possibility that their request was actually executed, but
+the response got delayed or dropped, so they never heard about it.</p>
+<h2 id="handling-drops-and-delays-via-retransmission">Handling drops and delays via retransmission</h2>
+<p>If the client's request message gets dropped, then there is nothing the server
+can do about it, because the server never even heard about the request in the
+first place. So the only node that can take action to handle this fault is the
+client. The basic idea is that the client should try sending the request again,
+and hopefully the message will be delivered successfully on this second attempt.</p>
+<div class="admonition note">
+<p class="admonition-title">Detecting drops in distributed systems</p>
+<p>If a message is dropped, it makes sense that a node can handle the situation by
+sending the message again, but <em>when</em> exactly should the node retransmit the
+message? Ideally, a node would only retransmit a message when it <em>knows</em> that
+the message was dropped. Unfortunately, in the standard fault model, <strong>it is not
+possible for a node to know for certain that one of its messages was dropped</strong>.</p>
+<p>The client can know that its message was delivered if the server's reply is
+received, so one might think that a node could infer that the message was
+dropped if the recipient does not respond in a reasonable amount of time. But
+that is not true! It's possible that the original message is simply delayed for
+an <em>un</em>reasonable amount of time. Or perhaps the original message was received
+but the response was dropped. Since these two situations are indistinguishable
+to the sending node, it has no way to accurately detect that it's message was
+dropped.</p>
+<p>This is a fundamental limitation in distributed systems. We design protocols so
+that nodes handle dropped messages by retransmitting them, and nodes must
+retransmit even though they are not sure the messages were dropped. (Of course,
+if a node is sure its message was delivered, then there is no need to
+retransmit.)</p>
+</div>
+<p>Let's update the protocol to handle dropped messages:</p>
+<ul>
+<li>The client repeatedly retransmits each request message until it gets a response.</li>
+</ul>
+<p>While this helps with drops, it highlights another problem: if the original
+request message was merely delayed instead of dropped, the client has no way of
+knowing that (see note on "Detecting drops"), so it will retransmit anyway. Now
+there are two copies of the message in the network. If both the original request
+and the retransmitted request are delivered to the server, then the server will
+execute the request twice. This does not satisfy Single-Client Single-Server
+Sequential Correctness, which says each request should be executed exactly once
+and in the order specified by the application. We will handle these duplicate
+requests in the next section.</p>
+<h2 id="duplicates">Duplicates</h2>
+<p>In the standard fault model, the network can duplicate any message. In
+particular, if the network duplicates the client's request message, then we end
+up with a similar situation to the previous section: the request is delivered to
+the server twice, and the server executes it twice, which is wrong.</p>
+<p>Consider the scenario illustrated by this timeline diagram:</p>
+<p><img src="img/rpc-duplicate-request.svg" width="95%" alt="A network timeline diagram showing the client sending an append request message for key &quot;foo&quot; and value &quot;world&quot; to the server. The request is delivered, and the server executes the append and sends a response message indicating that the new value is &quot;helloworld&quot;. The response is delivered to the client. Then a second copy of the original request message is delivered to the server again. The server executes the request again, and sends a second response message indicating that the new value is &quot;helloworldworld&quot;." /></p>
+<p>In this scenario, suppose the initial value of <code>"foo"</code> is <code>"hello"</code>. Then the
+client sends a request to append <code>"world"</code> to the value of key <code>"foo"</code>. The
+request is delivered and the server executes it, updates the value of key
+<code>"foo"</code> to be <code>"helloworld"</code>, and sends a response back to the client with this
+updated value. Then the network delivers a duplicate of the client's request
+message again. The server unknowingly executes it again, updating the value of
+key <code>"foo"</code> to be <code>"helloworldworld"</code> and sending another response to the
+client. The application layer will be very surprised to learn that its append
+request was executed twice, since this results in the wrong value being
+associated with <code>"foo"</code>!</p>
+<p>The situation can be even worse if the two response messages get reordered, as
+illustrated in this timeline diagram:</p>
+<p><img src="img/rpc-duplicate-request-reordered-response.svg" width="95%" alt="A network timeline diagram showing the client sending an append request message for key &quot;foo&quot; and value &quot;world&quot; to the server. The request is delivered, and the server executes the append and sends a response message indicating that the new value is &quot;helloworld&quot;. Unlike the previous scenario, the response is delayed in the network. Then a second copy of the original request message is delivered to the server again. The server executes the request again, and sends a second response message indicating that the new value is &quot;helloworldworld&quot;. This second response message is delivered to the client first, who will return the wrong answer to the application layer. Later, the first response is delivered to the client." /></p>
+<p>In this situation, the client receives the response to the duplicated request
+first, which reports that the new value is <code>"helloworldworld"</code>. Since the client
+was waiting for a response to its request, it will interpret this message as the
+answer and return this incorrect value to the application layer.</p>
+<p>It does not matter whether the reason for the duplicate message is that the
+client retransmitted it on purpose or that the network duplicated the original
+request, the solution is the same: the server must detect that the request was
+already executed and avoid executing it again.</p>
+<p>To enable the server to detect duplicate requests, the client can put a unique
+identifier on each request. Then, the server can remember all the unique
+identifiers it has already executed, and avoid re-executing them.</p>
+<p>A related issue occurs when response messages are duplicated. Consider
+the following scenario:</p>
+<p><img src="img/rpc-duplicate-response.svg" width="95%" alt="A network timeline diagram showing the client sending a get request message for key &quot;foo&quot; to the server. The request is delivered, and the server executes the get and sends a response message indicating that the value is &quot;hello&quot;. The client then sends a second request to append for key &quot;foo&quot; and value &quot;world&quot;. But before the server can execute it and respond, a duplicate copy of the first response is delivered to the client agian. The client will think this is a response to its second request and get confused because the answer is wrong." /></p>
+<p>The client first sends a <code>get</code> request for key <code>"foo"</code>, which is delivered to
+the server, who executes it and returns the value <code>"hello"</code>. Then the client
+sends a second request to append value <code>"world"</code> to key <code>"foo"</code>. At this point,
+the network redelivers a copy of the first response message. The client will
+interpret this message as a response to its second request, and return the
+(wrong) value to the application layer.</p>
+<p>The problem is that the client has no way to distinguish responses to different
+requests. We can solve this problem by reusing the unique identifiers the client
+puts on its requests to help the server deduplicate them. Whenver the server
+sends a response message, it can include the unique identifier of the
+corresponding request. Then, when the client is waiting for a response to a
+particular request, it can ignore all response messages with a different unique
+identifier.</p>
+<p>To summarize, in this section we have made the following adjustments to the
+Naive RPC protocol.</p>
+<ul>
+<li>The client puts a unique identifier on each of its requests. "Unique" means
+  this client never sends two different requests with the same identifier. When
+  the client retransmits a request, it reuses the same identifier as when it
+  first sent the original copy of the request.</li>
+<li>The server keeps track of the identifiers of all the requests it has ever
+  executed. When the server receives a request, it firsts checks to see if the
+  request identifier is already in its set of executed requests, and if so, it
+  does not re-execute the request. Otherwise, it executes the request and
+  includes the request identifier on its response message back to the client.</li>
+<li>The client keeps track of the identifier of its most recent request. The
+  client waits for a response with the matching identifier.</li>
+</ul>
+<h2 id="handling-drops-again">Handling drops again</h2>
+<p>This version of the protocol correctly handles duplicate requests and responses,
+but unfortunately it is no longer as tolerant to dropped messages as before. In
+particular, consider again the scenario where a client's request is executed on
+the server but the server's response message is dropped. The client will
+retransmit its request, but since the server already executed the request, it
+will ignore the retransmitted request since it is a duplicate. The problem is
+the client is stuck because it never received the response. We'd like the server
+to retransmit its original response message to unblock the client.</p>
+<p>So instead of tracking the <em>set</em> of executed request identifiers, we adjust the
+server to store a <em>map</em> from executed request identifier to a copy of the
+server's original response that request. When receiving a request, the server
+checks to see if the identifier is in the map. If so, it means the request was
+already executed, so the server just retransmits another copy of its original
+response found in the map. Otherwise, the request was not previously executed,
+so the server executes it for the first time, sends the response, and adds the
+(request identifier, response) pair to its map of executed requests.</p>
+<div class="admonition exercise">
+<p class="admonition-title">Exercise</p>
+<p>Your friend Faye L. S. Topp suggests reducing the amount of storage required on the
+server by only storing the set of request identifiers. She says that when the
+server needs to retransmit the response to a previously executed request, it can
+simply recompute the response by re-executing the request. Explain why Ro's idea
+doesn't work.</p>
+</div>
+<div class="admonition ednote">
+<p class="admonition-title">emichael@</p>
+<p>"Ro's idea"?</p>
+</div>
+<h2 id="rpc-protocol">RPC Protocol</h2>
+<p>Incorporating our changes to Naive RPC, we arrive at the folloinwg not-so-naive
+RPC protocol:</p>
+<ul>
+<li>When the application layer wants to invoke an RPC, then the client sends a
+  request message with a unique identifier, the procedure name, and argument
+  values to the server. The unique identifier is chosen to be distinct from all
+  identifiers the client has ever used before.</li>
+<li>After sending a request message, the client waits for the response. While
+  waiting, periodically retransmits the request with the same unique identifier.</li>
+<li>When the server receives a request message, it checks if the unique identifier
+  has been executed before. If so, then the server retransmits the same response
+  it sent back the first time the request was executed. If not, then the server
+  executes the requested procedure and sends back a response message with the
+  same unique identifier as the request and the return value from the procedure.</li>
+<li>When the client receives a response message, it checks to see whether it has
+  the same unique identifier as the request it is waiting for, and if so,
+  returns the value to the application layer. If the client is not waiting for a
+  request or if the unique identifier doesn't match, then the client ignores the
+  response message.</li>
+<li>We (still) make the following assumptions:<ul>
+<li>Nodes do not fail.</li>
+<li>The application layer will not invoke another RPC until it receives the
+  return value from the previous RPC.</li>
+</ul>
+</li>
+</ul>
+<p>Let's now revisit the problematic scenarios above and confirm that this protocol
+correctly handles them.</p>
+<ul>
+<li>If a request message is dropped and the client is still waiting for a response
+  to that request, then the client will eventually retransmit the request message.</li>
+<li>If a response message is dropped and the client is still waiting for a
+  response, then the client will retransmit the request. When the retransmitted
+  request arrives at the server, the server will observe that it has already
+  executed the request, but it will retransmit the response to unblock the
+  client.</li>
+<li>If a request message is duplicated and delivered twice, the server will detect
+  it using the unique identifiers. The server will retransmit a second copy of
+  the response message, but that is not a problem because the client already
+  handles duplicate response messages. (See below.)</li>
+<li>If a response message is duplicated and delivered twice, the client will
+  ignore the second copy of the message. If the second copy is delivered while
+  the client is not waiting for a response, then it will be ignored. If the
+  client is waiting for a response to a later request message, then the client
+  will compare the unique identifiers and realize the response message is not
+  the one it is looking for, and it will ignore it.</li>
+</ul>
+<h2 id="reducing-server-space-version-1">Reducing server space: version 1</h2>
+<p>As described, the protocol uses server memory proportional to the number of
+requests ever executed. This is because the server stores copies of all previous
+responses so that it can retransmit them if it receives another copy of the
+corresponding request. We can save space on the server by removing responses
+once they are no longer needed. The server only needs a response if it might
+need to retransmit it again in the future. Once the client has received the
+response, the server can stop storing a copy of it. To do this, the server needs
+to <em>know</em> that the client has received the response.</p>
+<p>One way for the client to tell the server that it has received the response is
+to have the client send the server a new kind of message called an
+<em>acknowledgment</em> whenever it receives a response. The acknowledgment message
+contains the unique identifier of the corresponding response. When the server
+receives the acknowledgment, it can remove the saved copy of the response to
+reduce space usage.</p>
+<p>To make this into a robust protocol, we would need to handle the situation where
+the acknowledgment message was dropped. We leave this as an exercise and move on
+to an even better way to design the protocol that avoids acknowledgment messages
+altogether.</p>
+<div class="admonition exercise">
+<p class="admonition-title">Exercise</p>
+<p>What would go wrong if the server simply removed all record of ever executing
+the request from its storage?</p>
+</div>
+<div class="admonition exercise">
+<p class="admonition-title">Exercise</p>
+<p>Extend the protocol from this section to handle the case where an acknowledgment
+message is dropped.</p>
+</div>
+<h2 id="reducing-server-space-version-2">Reducing server space: version 2</h2>
+<p>The client is only allowed to send one request at a time. So if the server
+receives a new request from the client, then that implicitly serves as an
+acknowledgment to the server that the client received its previous response.</p>
+<p>We can optimize the protocol from the previous section using this insight to
+eliminate explicit acknowledgment messages as follows. Instead of using
+arbitrary unique identifiers for messages, we use ordered <em>sequence numbers</em>.
+The client identifies its messages with ascending sequence numbers. The server
+stores only the sequence number and response for the most recent client request
+it has executed. Whenever the serve receives a request, it handles it according
+to the following cases:</p>
+<ul>
+<li>If the sequence number is greater than the most recently executed one, then
+  this is a new request. The server executes the request, sends the response to
+  the client, and stores the sequence number and a copy of the response. The
+  server also removes all previously stored responses and sequence numbers.</li>
+<li>If the sequence number is equal to the most recently executed one, then its
+  possible the client is retransmitting its last request because the server's
+  response was dropped. The server retransmits its stored response.</li>
+<li>If the sequence number is less than the most recently executed one, then this
+  is a duplicate of an old request. The server can safely ignore this duplicate
+  because the client has already implicitly acknowledged the server's response
+  to this request by sending a higher-numbered request.</li>
+</ul>
+<p>With these adjustments, the server only needs to store the most recently
+executed request for the client, so the protocol's memory requirements do not
+grow over time.</p>
+<h2 id="handling-multiple-clients">Handling multiple clients</h2>
+<p>We can adapt the protocol to handle multiple clients on a single server. We
+assume that the network allows nodes to determine what other node sent it a
+particular message. Each client sends its requests to the one server, and each
+client has an independent space of sequence numbers.</p>
+<div class="admonition todo">
+<p class="admonition-title">Todo</p>
+<p>Do we want to assume that all messages automatically include the sender's id, or
+do we want to explicitly include it? (Doesn't matter. The latter is briefer but
+the former is more explicit.)</p>
+</div>
+<p>First, what does it mean for the server to be correct in the presence of
+multiple clients? Each client is still required to only send one request at a
+time, but multiple clients can send requests at the same time. So there is not a
+single global total order on requests that we can use to describe the correct
+results. Instead, we take advantage of the fact that our system consists of a
+single server to determine what order the requests should be executed in.</p>
+<div class="admonition note">
+<p class="admonition-title">Definition: Multi-Client Single-Server Sequential Correctness</p>
+<p>If the system consists of multiple clients and one server, and neither the
+clients nor the server fail, and the clients each send a sequence of requests
+one at a time, waiting for each response before sending the next request, then
+the server responses agree with what would have happened if we had run the
+procedures locally in the order the requests first arrived at the server.</p>
+</div>
+<p>To implement this in our protocol, the server needs to store, for each client,
+the sequence number and response message for the most recent request executed
+for that client. The memory required by the server is now proportional to the
+number of clients who have ever executed a request.</p>
+<h2 id="beyond-a-single-server-handling-node-failures">Beyond a single server: Handling node failures</h2>
+<p>In this chapter, we have described what it takes for a client to reliably ask a
+server to do something for it, even in the presence of the standard network
+faults of dropped, duplicated, delayed, and reordered messages. However, we have
+assumed that the nodes involved do not fail. If the server crashes, then the
+clients in this chapter will have no choice but to wait until the human operator
+restores the server, probably by rebooting it. Also, unless non-volatile storage
+is used, the server will not retain any of its state from before the crash,
+meaning clients may have lost work and may not know whether their most recent
+request was executed or not.</p>
+<p>We will spend the next several chapters discussing automatic mechanisms for
+handling server crashes through <em>replication</em>, which is the idea that having
+multiple equivalent servers allows the system to continue to operate even if one
+of the servers crashes. As we will see, this makes the protocols significantly
+more complex, not least because it requires defining a more sophisticated
+correctness property that does not depend on assuming their is only one server.</p>
+
+  
+          
+          
+        </div>
+        <footer id="bottom-bar">
+          
+            <a class="left" href="/book/02-foundations.html" title="Foundations"><i class="fa-solid fa-left-long"></i></a>
+          
+          
+            <a class="right" href="/book/primary-backup.html" title="Primary-Backup Replication"><i class="right fa-solid fa-right-long"></i></a>
+          
+        </footer>
+      </div>
+    </div>
+  </body>
+</html>

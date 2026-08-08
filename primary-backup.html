@@ -1,0 +1,362 @@
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <title>Primary-Backup Replication &ndash; Distributed Systems: Principles and Practice</title>
+
+    
+
+    <!-- Polyfill (fakes modern web APIs on older browsers; load first) -->
+    <script src="/book/third-party/polyfill/js/polyfill.min.js"></script>
+
+    <link rel="stylesheet" type="text/css" href="/book/third-party/normalize/normalize.css">
+
+    <!-- Fonts -->
+    <link rel="stylesheet" type="text/css" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:400,400italic,600">
+    <link rel="stylesheet" type="text/css" href="https://fonts.googleapis.com/css?family=Inconsolata:400,700">
+    <link rel="stylesheet" type="text/css" href="/book/third-party/fontawesome/css/all.min.css">
+
+    <!-- jQuery -->
+    <script src="/book/third-party/jquery/js/jquery.min.js"></script>
+
+    <!-- Highlight -->
+    <link rel="stylesheet" type="text/css" href="/book/third-party/highlight/css/highlight-default.css">
+
+    <!-- SVG -->
+    <script src="/book/third-party/svg/js/svg.min.js"></script>
+
+    <!-- MathJax -->
+    <script>
+      window.MathJax = {
+        tex: {
+          // Allow $ to delimit math mode, to make the behavior inside and outside markdown blocks
+          // the same.
+          inlineMath: [['$', '$'], ['\\(', '\\)']]
+        }
+      };
+    </script>
+    <script src="/book/third-party/mathjax/tex-chtml.js"></script>
+
+    <!-- First-party static resources -->
+    <script src="/book/js/main.js"></script>
+    <script src="/book/js/jrw-svg.js"></script>
+    <script src="/book/js/trace-visualization.js"></script>
+    <script src="/book/js/notes.js"></script>
+
+    <link rel="stylesheet" type="text/css" href="/book/css/main.css">
+
+    
+  </head>
+
+  
+  
+
+  <body>
+    <div id="wrapper">
+      <nav id="sidebar"><ol start="0">
+        
+        
+          
+            
+          
+            <a href="/book/preface.html">
+          
+          <li>Preface</li>
+          
+            </a>
+            
+          
+        
+          
+        
+          
+            
+          
+            <a href="/book/01-intro.html">
+          
+          <li>Introduction</li>
+          
+            </a>
+            
+          
+        
+          
+        
+          
+            
+          
+            <a href="/book/02-foundations.html">
+          
+          <li>Foundations</li>
+          
+            </a>
+            
+          
+        
+          
+        
+          
+            
+          
+            <a href="/book/rpc.html">
+          
+          <li>Remote Procedure Call</li>
+          
+            </a>
+            
+          
+        
+          
+        
+          
+            
+          
+            <a href="/book/primary-backup.html">
+          
+          <li>Primary-Backup Replication</li>
+          
+            </a>
+            
+              <div class="toc">
+<ul>
+<li><a href="#primary-backup-version-0">Primary-Backup version 0</a><ul>
+<li><a href="#primary-failover">Primary failover</a></li>
+<li><a href="#backup-failover">Backup failover</a></li>
+<li><a href="#the-problem">The problem</a></li>
+</ul>
+</li>
+<li><a href="#primary-backup-v1">Primary-Backup v1</a></li>
+</ul>
+</div>
+
+            
+          
+        
+          
+        
+          
+            <div class="sidebar-section">
+            <span class="sidebar-section-header">Consensus</span>
+            
+              
+          
+            <a href="/book/distributed-objects.html">
+          
+          <li>Distributed Objects</li>
+          
+            </a>
+            
+          
+        
+            
+              
+          
+            <a href="/book/consensus.html">
+          
+          <li>Consensus and State Machine Replication</li>
+          
+            </a>
+            
+          
+        
+            
+            </div>
+          
+        
+          
+            
+          
+            <a href="/book/glossary.html">
+          
+          <li>Glossary</li>
+          
+            </a>
+            
+          
+        
+          
+        
+        
+          
+          
+            <a href="/book/style-guide.html">
+          
+          <li>Style Guide</li>
+          
+            </a>
+            
+          
+        
+        
+      </ol></nav>
+      <div id="main-column">
+        <header id="top-bar">
+          <i class="fa-solid fa-bars" id="sidebar-button"></i>
+          <h1 class="book-title"><a href="/book/">Distributed Systems: Principles and Practice</a></h1>
+        </header>
+        <div id="content">
+          <h1>Primary-Backup Replication</h1>
+          
+          
+  
+<ul>
+<li>Recall how our RPC protocol does not handle node failures.</li>
+<li>Our goal in this chapter is to begin handling node failure.<ul>
+<li>Spoiler: This chapter will not completely satisfactorily handle node
+  failures. We will get there when we discuss consensus in later chapters.</li>
+</ul>
+</li>
+<li>So you want to handle a node failure. What happens when a node fails?<ul>
+<li>Whatever that node would have done if it didn't fail, some other node now
+  needs to do.</li>
+<li>So you need more than one node. And you need more than one node that is
+  "ready" to do whatever the failed node was doing.</li>
+</ul>
+</li>
+<li>If all you have is compute (eg stateless RPC), then this is pretty easy. You
+  can have a pool of servers. Since requests are stateless, any server can serve
+  any request. If a server fails, no problem as long as there's still at least
+  one server remaining.<ul>
+<li>All the nodes in the pool are ready at any time to answer any client's
+  stateless requests.</li>
+</ul>
+</li>
+<li>Harder if RPCs are stateful!<ul>
+<li>Say we have one client C and two servers S1 and S2 and our goal is to use
+  the two servers to build a fault tolerant key-value store that still works
+  if either server fails.</li>
+<li>We can't just do what we did for stateless RPCs and say that any server
+  can answer any request, because the servers have to keep track of the
+  current state of the key-value store. If C executes <code>put("foo", "hello")</code>
+  on S1 and gets a response, and then C executes <code>get("foo")</code> on S2, then C
+  expects the answer to be "hello", but S2 has no idea about the first
+  request.</li>
+</ul>
+</li>
+</ul>
+<p>TODO: reference linearizability? this is also a good time to bring up the
+challenge of defining linearizability when the system consists of more than one
+server.</p>
+<ul>
+<li>You can think of a RPC response from the system as a promise never to forget
+  that the RPC happened. If a node fails, that can't cause the system to forget
+  that the RPCs executed by that node happened.<ul>
+<li>"You shouldn't make promises you can't keep." -- a server shouldn't
+  respond to a client request without knowing that the RPC will survive the
+  server's own failure.</li>
+<li>And that means the server has to tell another server about the request
+  before executing it.</li>
+<li>Similarly, a server must be sure it has the most recent state before
+  executing new client requests on that state.</li>
+</ul>
+</li>
+<li>There are many ways to design a protocol so that the server "tells another
+  server" before responding to the client. In this chapter we study a relatively
+  simple technique called primary-backup replication.</li>
+</ul>
+<h2 id="primary-backup-version-0">Primary-Backup version 0</h2>
+<ul>
+<li>There are any number of clients.</li>
+<li>There are two servers, called the primary and the backup.</li>
+<li>Clients send requests to the primary.</li>
+<li>The primary sequences the requests and forwards them in order to the backup.</li>
+<li>The backup execute each request it receives from the primary in order and
+  responds to the primary to tell it that the request is now saved on the
+  backup.</li>
+<li>Once the primary hears that the next forwarded request is executed on the
+  backup, it can execute it locally and respond to the client who originally
+  sent the request.</li>
+</ul>
+<p>TODO: need to talk about deterministic state machines; we assume that executing
+the same request on the same state results in the same state and response.</p>
+<p>With this protocol, the results of each requested are reflected on both servers
+before the client gets a response. This is good because it means in theory the
+backup has everything it needs to takeover if the primary fails.</p>
+<h3 id="primary-failover">Primary failover</h3>
+<p>Suppose the primary fails. The idea was that the backup should take over. But
+how does that actually happen?</p>
+<ul>
+<li>Since there are only two servers, if the primary fails, then the backup will
+  be all alone. So if we want the system to keep executing requests, then the
+  backup will have to do them by itself. This means the system will not tolerate
+  any further node failures, but let's say we're ok with that.</li>
+<li>Clients were sending their requests to the primary. If the primary fails, they
+  will not get any answers but will have no idea why. The backup has no way to
+  take over.</li>
+<li>We can adjust the protocol so that clients send their requests to both the
+  primary and the backup. As long as both nodes are up, the backup can just
+  ignore client requests except for those that are forwarded by the primary.
+  (Exercise: why can't the backup just execute the requests it receives from
+  clients?)</li>
+<li>When the primary fails, the backup can take over and start executing requests
+  directly from clients instead.</li>
+</ul>
+<p>TODO: use the word "failure detection" somewhere. Talk about impossibility.</p>
+<ul>
+<li>When does the backup know to take over? Maybe when it hasn't heard from the
+  primary in "a while"?</li>
+<li>What happens if the network dropped a bunch of messages from the primary, so
+  the backup doesn't hear from the primary for a while and decides to take over?
+  But actually the primary is still up. And then the network starts delivering
+  messages again. Once it takes over, the backup should ignore forwarded
+  requests from the primary (exercise: what happens if the backup responds to
+  forwarded requests normally?)</li>
+</ul>
+<p>This strategy of having the backup take over when the primary fails seems to
+work. Notice that the backup is the one who makes the decision about when to
+take over. The primary can't make this decision because it might have failed!</p>
+<h3 id="backup-failover">Backup failover</h3>
+<p>Now suppose the backup fails. The situation is nearly a mirror image from the
+case when the primary fails.</p>
+<ul>
+<li>Again, since there are only two servers, if the backup fails, then the primary
+  will be all alone. So if we want the system to keep executing requests, then
+  the primary will have to do them by itself. This means the system will not
+  tolerate any further node failures, but let's say we're ok with that.</li>
+<li>The primary can take over when it hasn't heard from the backup in "a while".</li>
+<li>If the primary takes over but then later starts receiving messages from the
+  backup, it can just ignore them.</li>
+</ul>
+<p>This failover procedure also seems to work to tolerate a backup failure. Notice
+that the primary is the one who makes the decision about when to take over. The
+backup can't make this decision because it might have failed!</p>
+<h3 id="the-problem">The problem</h3>
+<p>Perhaps you have noticed a problem with these two failover procedures: they
+could both happen at the same time! Suppose both the primary and backup are up
+but the network between them has failed, so they can't communicate. Both the
+primary and the backup may misinterpret the lack of communication as an
+indication that the other node has failed, and initiate their failover procedure
+to take over the system. The result is two nodes that both think they have taken
+over and can both execute further client requests, violating linearizability.
+(Exercise: write out a scenario that demonstrates the linearizability
+violation.)</p>
+<p>The issue is that the primary and the backup each have the ability to
+unilaterally take over the system. This seems necessary in order to tolerate
+failures, but it leads to a non-linearizable protocol.</p>
+<h2 id="primary-backup-v1">Primary-Backup v1</h2>
+<ul>
+<li>Introduce the view server as an arbiter of who has failed</li>
+<li>Point out obvious problem with the view server failing</li>
+<li>Maybe first describe a version of the protocol that tolerates at most one
+  failure: start out with two nodes, if either fails, the view server moves to a
+  single-node view and then stays there forever.</li>
+<li>Then introduce the multiple numbered views and pool of servers.</li>
+</ul>
+
+  
+          
+          
+        </div>
+        <footer id="bottom-bar">
+          
+            <a class="left" href="/book/rpc.html" title="Remote Procedure Call"><i class="fa-solid fa-left-long"></i></a>
+          
+          
+            <a class="right" href="/book/distributed-objects.html" title="Distributed Objects"><i class="right fa-solid fa-right-long"></i></a>
+          
+        </footer>
+      </div>
+    </div>
+  </body>
+</html>

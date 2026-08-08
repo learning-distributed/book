@@ -1,0 +1,1059 @@
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <title>Distributed Fault Models &ndash; Distributed Systems: Principles and Practice</title>
+
+    
+
+    <!-- Polyfill (fakes modern web APIs on older browsers; load first) -->
+    <script src="/book/third-party/polyfill/js/polyfill.min.js"></script>
+
+    <link rel="stylesheet" type="text/css" href="/book/third-party/normalize/normalize.css">
+
+    <!-- Fonts -->
+    <link rel="stylesheet" type="text/css" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:400,400italic,600">
+    <link rel="stylesheet" type="text/css" href="https://fonts.googleapis.com/css?family=Inconsolata:400,700">
+    <link rel="stylesheet" type="text/css" href="/book/third-party/fontawesome/css/all.min.css">
+
+    <!-- jQuery -->
+    <script src="/book/third-party/jquery/js/jquery.min.js"></script>
+
+    <!-- Highlight -->
+    <link rel="stylesheet" type="text/css" href="/book/third-party/highlight/css/highlight-default.css">
+
+    <!-- SVG -->
+    <script src="/book/third-party/svg/js/svg.min.js"></script>
+
+    <!-- MathJax -->
+    <script>
+      window.MathJax = {
+        tex: {
+          // Allow $ to delimit math mode, to make the behavior inside and outside markdown blocks
+          // the same.
+          inlineMath: [['$', '$'], ['\\(', '\\)']]
+        }
+      };
+    </script>
+    <script src="/book/third-party/mathjax/tex-chtml.js"></script>
+
+    <!-- First-party static resources -->
+    <script src="/book/js/main.js"></script>
+    <script src="/book/js/jrw-svg.js"></script>
+    <script src="/book/js/trace-visualization.js"></script>
+    <script src="/book/js/notes.js"></script>
+
+    <link rel="stylesheet" type="text/css" href="/book/css/main.css">
+
+    
+  </head>
+
+  
+  
+
+  <body>
+    <div id="wrapper">
+      <nav id="sidebar"><ol start="0">
+        
+        
+          
+            
+          
+            <a href="/book/preface.html">
+          
+          <li>Preface</li>
+          
+            </a>
+            
+          
+        
+          
+        
+          
+            
+          
+            <a href="/book/01-intro.html">
+          
+          <li>Introduction</li>
+          
+            </a>
+            
+          
+        
+          
+        
+          
+            
+          
+            <a href="/book/02-foundations.html">
+          
+          <li>Foundations</li>
+          
+            </a>
+            
+              <div class="toc">
+<ul>
+<li><a href="#dramatis-personae">Dramatis Personae</a></li>
+<li><a href="#fault-models">Fault models</a><ul>
+<li><a href="#node-failures">Node Failures</a><ul>
+<li><a href="#fail-stop-nodes">Fail-stop Nodes</a></li>
+<li><a href="#asynchronous-nodes">Asynchronous Nodes</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a href="#network-faults">Network Faults</a><ul>
+<li><a href="#message-corruption">Message Corruption</a></li>
+<li><a href="#message-loss">Message Loss</a></li>
+<li><a href="#message-delay">Message Delay</a></li>
+<li><a href="#message-duplication">Message Duplication</a></li>
+<li><a href="#message-reordering">Message Reordering</a></li>
+<li><a href="#network-partitions">Network Partitions</a></li>
+</ul>
+</li>
+<li><a href="#implications-of-the-standard-fault-model">Implications of the Standard Fault Model</a><ul>
+<li><a href="#the-two-student-lunch-problem">The Two Student Lunch Problem</a></li>
+<li><a href="#reliable-failure-detection">Reliable Failure Detection</a></li>
+<li><a href="#distributed-system-validation">Distributed System Validation</a></li>
+</ul>
+</li>
+<li><a href="#other-fault-models">Other Fault Models</a><ul>
+<li><a href="#local-clock-synchronization">Local Clock Synchronization</a></li>
+<li><a href="#synchrony">Synchrony</a></li>
+<li><a href="#byzantine-non-fail-stop-computation">Byzantine (Non-Fail Stop) Computation</a></li>
+</ul>
+</li>
+</ul>
+</div>
+
+            
+          
+        
+          
+        
+          
+            
+          
+            <a href="/book/rpc.html">
+          
+          <li>Remote Procedure Call</li>
+          
+            </a>
+            
+          
+        
+          
+        
+          
+            
+          
+            <a href="/book/primary-backup.html">
+          
+          <li>Primary-Backup Replication</li>
+          
+            </a>
+            
+          
+        
+          
+        
+          
+            <div class="sidebar-section">
+            <span class="sidebar-section-header">Consensus</span>
+            
+              
+          
+            <a href="/book/distributed-objects.html">
+          
+          <li>Distributed Objects</li>
+          
+            </a>
+            
+          
+        
+            
+              
+          
+            <a href="/book/consensus.html">
+          
+          <li>Consensus and State Machine Replication</li>
+          
+            </a>
+            
+          
+        
+            
+            </div>
+          
+        
+          
+            
+          
+            <a href="/book/glossary.html">
+          
+          <li>Glossary</li>
+          
+            </a>
+            
+          
+        
+          
+        
+        
+          
+          
+            <a href="/book/style-guide.html">
+          
+          <li>Style Guide</li>
+          
+            </a>
+            
+          
+        
+        
+      </ol></nav>
+      <div id="main-column">
+        <header id="top-bar">
+          <i class="fa-solid fa-bars" id="sidebar-button"></i>
+          <h1 class="book-title"><a href="/book/">Distributed Systems: Principles and Practice</a></h1>
+        </header>
+        <div id="content">
+          <h1>Distributed Fault Models</h1>
+          
+          
+  
+<p>“All models are wrong, but some are useful.” - George Box</p>
+<p>One of the key challenges facing designers of distributed systems is failure resilience—figuring out
+how to correctly and reliably compute some output despite the failure or incorrect operation of some of the
+elements used in the computation and/or communication network used to convey partial results between those elements.
+The goal of this chapter is to precisely define what we mean by a failure resilient distributed computation,
+as a basis for evaluating possible solutions.</p>
+<p>Failure resilience is sometimes also called <em>fault tolerance</em>, emphasizing that failures
+may be temporary or minor, such as the network failing to deliver a message,
+or more serious, such as when one of the nodes participating in the distributed system crashes.
+The distributed system needs to work correctly despite either type of error.
+For simplicity, we use the term <em>failure</em> and <em>fault</em> as synonyms, but we mean them to be inclusive
+of both types of errors.</p>
+<h2 id="dramatis-personae">Dramatis Personae</h2>
+<p>To start, what are the elements of a distributed computation?</p>
+<div class="marginnote">
+What are the elements of a distributed computation?
+</div>
+<ul>
+<li><strong>Node</strong>: The compute part of a distributed system.  In the previous chapter, we introduced
+some examples of nodes: an individual client machine such as a laptop or smartphone can
+convey a user's request to a separate server machine so that server can reply with some information
+or perform some action.  Server nodes talk to clients, but they may also communicate with each other—as
+we will see, for fault tolerance or to scale up the number of clients that can be supported by a given service.
+Likewise, in some embedded systems or peer-to-peer settings, clients communicate directly with each other as well as other servers.</li>
+<li><strong>Local state (or node-local state)</strong>: The partial result of the distributed computation stored on a single node.
+Local state can be accessed by the node, but not (at least, not directly) by other nodes except by sending messages
+to that node. That is, our model of a distributed computation excludes shared memory.</li>
+<li><strong>Network:</strong> The means of communication between nodes.
+Networks themselves are distributed systems, composed of links that carry information over physical distance,
+and switches or routers that send data over links to each other and to hosts. Networks today are typically designed so that
+(in the absence of failures) any node can communicate with any other node, and so that is the focus on this book.
+However, distributed systems can be designed to work with more limited communication patterns, such as in a partially
+connected system of sensors, where all-to-all communication is possible if nodes themselves serve as switches and routers.
+Network links, switches, and routers can fail in different ways, and so the
+construction of distributed systems that are resilient to network failures is a key topic of this book.</li>
+<li><strong>Message:</strong> The logical unit of communication. In our model, the network delivers messages from a source node to a
+specific destination node. (Some networks support other communication patterns but that is unimportant for our discussion.)
+The physical unit of communication is a limited size packet; a message can be of arbitrary size, encoded as a sequence of
+discrete packets, reassembled at the destination node into the original message.</li>
+<li><strong>Event:</strong> The trigger on a specific node for some computation to happen on a node.
+Examples of events are the arrival of a message (e.g., at a client or a server) or the arrival of a timeout.</li>
+<li><strong>Event handler:</strong> The code invoked when an event occurs, e.g., when a message arrives or a timeout occurs on that node.</li>
+<li><strong>Timeout:</strong> A special type of event, signaling the expiration of some delay on that node, with the delay measured by the
+clock on that node.</li>
+<li><strong>Action:</strong> The effect of the computation on a specific node, triggered by an event. Actions can be to
+modify local state, send one or more messages to some other nodes (for example, reply to a client request), or set a timeout.</li>
+</ul>
+<p>The relationship between these elements is illustrated below. <img alt="Figure 1" src="/book/figures/terms.png" /></p>
+<p>In the figure, node A sends a message ("Hi!") to node B, by sending it on its network link into the
+communication network.  When the message is delivered, B will execute an event handler that says that the action to take
+when receiving a "Hi!" message is to reply with a "Hi!" back to the sender.  Likewise, node C
+could set a timeout; this causes a timeout event handler to be run at some point in the future. For example, if no one
+says "Hi!" to node C within the time window, it
+could send a "Hi!" to B in order to get it to say "Hi!" back.</p>
+<div class="admonition note">
+<p class="admonition-title">Messages vs. packets</p>
+<p>In communication networks, the unit of transfer is the packet, not the message.
+Like a message, a packet carries data from a source node to a destination.
+Both messages and packets are delivered as a unit—either all of the packet (or message) is delivered or none of it is.
+Error checking is added into the packet (or message) to ensure that it is not corrupted in flight.
+A packet (or message) can be delayed, dropped, reordered, or duplicated by the network, in the same way that messages can be.</p>
+<p>So why do we use the term message in this textbook?
+Packets are a physical unit of transfer, with a specific header format and maximum payload size.
+As a physical unit, they are limited by
+the specific restrictions of the network they traverse.
+For example, in ATM networks, the payload size is 48 bytes; in Ethernet or WiFi networks,
+the maximum packet size is 1500 bytes. Some data center Ethernet implementations allow up to 9000 byte packets.</p>
+<p>A message is a logical unit of transfer of arbitrary size.
+Depending on the size of the message to be sent, this can be one packet (if the message
+fits in the maximum packet size of the network it traverses) or several.
+From the point of view of the distributed computation, however,
+the message handler is invoked only once <em>all</em> of its constituent packets are delivered correctly.
+Thus, specifying the distributed computation as a (possibly failure-prone) message exchange is
+merely operating at a higher level of abstraction, allowing us
+to focus on the distributed computation rather than on the details of low-level packet handling.
+Operating at this different level of abstraction does not change what the distributed system <em>does</em>.
+At a physical level, packets arrive, they are handled, other packets are sent, timeouts occur,
+and when all the packets of a message arrive, the higher level message handler is called.
+Thus, the difference between messages and packets is similar to the difference between programming in a high-level
+language or in assembly code; it is merely a simpler and more abstract way of describing what the system does.</p>
+</div>
+<h2 id="fault-models">Fault models</h2>
+<div class="marginnote">
+What happens if some nodes fail while others remain functional?
+</div>
+
+<p>In distributed systems, the elements of the computation—both the nodes and the network
+connecting them—can independently fail, even when the rest of the system continues to work correctly.
+This is different from what we experience with individual computers, such as smartphones, laptops, or servers.
+A smartphone is composed of many separate silicon devices, each of which may have multiple processing elements or cores.
+However, the system (generally) works or fails as a single unit.
+For example, if the operating system running on one core of a smartphone detects an unexpected and fatal error,
+the entire system resets to a known state rather than just that one core. Likewise, if an application detects a fatal error,
+the operating system will generally stop all of the parts of that application's computation, even those running on different cores.
+When cores share memory, the incorrect functioning of one core can potentially corrupt data structures
+used by other cores, and so it makes sense to reset to a known state. Likewise, when a smartphone runs out
+of power, the entire system powers down.</p>
+<p>In distributed systems, parts of the system can fail while other parts remain functional.
+Different nodes or parts of the network do not share memory; they often have different power supplies and
+different operating systems. Thus, distributed systems experience <em>partial failures</em>;
+that is, a failure of one element does not imply the failure of any (or all) of the
+other components. Although partial failure modes can make programming distributed systems more complicated,
+it is the basis for building systems that continue to provide service despite failures of some components.</p>
+<div class="marginnote">
+<table style="border-collapse: separate; border-spacing: 20px 0;" cellpadding="15">
+<tr>
+<th>Availability</th>
+<th>Downtime/week</th>
+<tr>
+<tr>
+<td>99%</td>
+<td>100 minutes</td>
+</tr>
+<tr>
+<td>99.9%</td>
+<td>10 minutes</td>
+</tr>
+<tr>
+<td>99.99%</td>
+<td>1 minute</td>
+</tr>
+<tr>
+<td>99.999%</td>
+<td>6 seconds</td>
+</tr>
+</table>
+</div>
+<p>Two important concepts when describing failure resilience are <strong>availability</strong> and <strong>reliability</strong>.
+Availability, or uptime, is the fraction of time that the system is able to provide service, despite failures
+of all kinds (including local or widespread power outages, software or hardware crashes, network outages, and so forth).
+This is often measured in <em>nines</em>—shorthand for the number of leading nines when describing the fraction of time
+the system is available, or "up".  For instance, if the system is available 99% of the time, that system
+would provide two nines of uptime, or equivalently, is down on average less than 100 minutes per week;
+if it is available 99.999% of the time, it provides five nines of uptime, or is down on average less than 6 seconds per week.
+Most popular cloud-based applications aim for at least three or four nines of availability.
+Reliability is the related concept of how frequently the system produces the correct answer, assuming
+the service returns an answer at all (that is, assuming it is available).</p>
+<div class="admonition note">
+<p class="admonition-title">Single vs. Dual Engine Airplanes</p>
+<p>The difference between reliability and availability in distributed systems is perhaps best illustrated
+ by considering the difference between single- and dual-engine airplanes.
+ In the early days of aviation, airplanes were built with a single engine;
+ it was hard enough to get liftoff even using the lightest of materials.
+ However, if that engine failed (as they often did in the early days), the plane would
+ need to land, rather abruptly.  Flying over water for an extended period in a single-engine plane, as
+ Lindbergh did in crossing the Atlantic, was extremely hazardous.  For added safety,
+ by the 1930s passenger airplanes were designed with multiple engines, so that the plane
+ could continue to operate temporarily if one of the engines fails during flight, e.g., enabling the plane
+ to reach a nearby landing strip.  This improved <em>reliability</em>—fewer planes crashed.
+ However, it also reduced the <em>availability</em> of airplanes by nearly a factor of two—few
+ people would think it sensible to take off in a twin-engine plane if one of the engines is broken. (We
+ thank Jim Gray for this analogy.)</p>
+<p>Distributed systems are similar to aircraft design in that we want both types of system to work
+ correctly even when there is a failure of some kind.  However, they differ in one key respect.
+ With distributed systems, operating with failures is the normal case, not something to be avoided.
+ In a data center with hundreds of thousands of servers, millions of disks, and tens of thousands of network switches,
+ something is always broken, offline, rebooting, or being upgraded.
+ Distributed systems are designed to provide high availability—so that
+ they can continue to serve customers even when parts of the system are broken—and high reliability—so
+ that they lose customer data as rarely as possible—regardless of what kinds of failures occur.</p>
+</div>
+<div class="marginnote">
+What is a fault model?
+</div>
+<p>To proceed, we need to precisely define how the various elements—nodes and their interconnection network—of a
+distributed system can fail.  This is called a <strong>fault model</strong>—the set of faults (possibly minor)
+that the system is designed to handle, and implicitly, those it is designed <em>not to handle</em>.</p>
+<p>For example, a system-wide failure of the primary power supply <em>and</em> the battery or backup power supply will generally
+halt the progress of all of the computers whose operation depends on that power supply, even if the system
+is designed to be resilient to individual node failures.  If we want the system to be resilient to large scale
+power outages, we need to spread the computation across data centers located in multiple
+geographic regions, so that a power failure in one region will not take out all of the nodes in the system.
+Of course, it is always possible that power failures can occur across a wide
+geographic region, such as when nearly the entire nation of Pakistan lost power for many hours in the <a href="https://en.wikipedia.org/wiki/2023_Pakistan_blackout">2023 blackout</a>.
+To be resilient against those types of failures, we would need to spread the computation over an even wider
+geographic region, such as across countries or continents.</p>
+<p>Why not always spread data as widely as possible?
+One answer that we will discuss at more length later in the book is that the more widely data is geographically distributed,
+the harder (and more expensive) it is to keep that data consistent.
+Another reason is legal: some countries have privacy laws that insist that their citizen's personal data be stored only
+on servers within that country; in that case it may not be possible to be resilient against country-wide outages.</p>
+<div class="marginnote">
+Why are there multiple fault models?
+</div>
+<p>The more general the fault model, the more failures it can handle, but also (potentially)
+the slower and more complex the algorithm.
+Narrowing the fault model, that is excluding certain types of faults from consideration,
+can simplify the design as well as improve performance.
+However, if (or when) faults outside the model do occur, then the distributed system may become unavailable,
+or, in some cases it may even produce an unexpected and unwelcome result, that is, it may become unreliable.
+Worse, if a developer makes some assumption about the types of faults that can occur on the specific
+hardware they are using, and then later on, that hardware changes to invalidate those assumptions—that
+can also cause the distributed system to produce incorrect results. Thus, it is safer to avoid making
+unwarranted, undocumented, or non-portable assumptions about the underlying hardware, even at some cost
+in performance.</p>
+<p>While the academic literature considers a very wide number of fault models,
+we discuss one specific model in depth in this book.
+The model we consider (which we call the Standard Fault Model (SFM)) is a slight simplification of the one most
+widely used in industry. It is both general—it covers almost all real world faults—and it is consistent with an
+efficient implementation. Later on in this chapter, we will discuss some related fault models—one
+that is weaker (allows some algorithms excluded by the Standard Fault Model but makes stronger assumptions about
+the operating environment) and one that is stronger (makes weaker assumptions about the types of faults
+it handles, but also requires more complex algorithms).</p>
+<div class="admonition note">
+<p class="admonition-title">Definition: The Standard Fault Model</p>
+<p>The Standard Fault Model for distributed systems described in this book (except where explicitly noted) is
+asynchronous fail-stop nodes and an asynchronous non-corrupting communication network
+with arbitrary message delay, loss, reordering, and duplication, with network partitions.
+We assume that event handlers are executed in their entirety, or not at all; that event handlers
+are sequential and deterministic; and that any message that is delivered has uncorrupted contents, that is
+if a message is delivered, what is delivered is what was sent.</p>
+</div>
+<p>The definition includes some terms that we define below; we first discuss the fault model as it
+pertains to nodes, then communication networks, and then give some examples as to its implications.</p>
+<h3 id="node-failures">Node Failures</h3>
+<h4 id="fail-stop-nodes">Fail-stop Nodes</h4>
+<div class="marginnote">
+What does fail-stop mean?
+</div>
+<p>A fail-stop model is one where the nodes of the distributed
+system either execute event handlers correctly according to the protocol, or they crash—stop executing
+event handlers and responding to events. An example would be when a node detects an exception and stops,
+or when the node hardware or power supply fails and the node stops.  This may seem quite general—after
+all, in most computer science classes we assume that the computer actually does what we tell it to do,
+and if it acts differently from that, what does that even mean anyway?  Nevertheless, the fail-stop model does
+exclude certain types of failures, such as those where the node fails but continues to respond to events in arbitrary ways.
+For example, in this more general model, nodes might sometimes send fake messages or messages that pretend to be from some other node.
+These types of failures can definitely happen—e.g.,
+if a malicious attacker takes control of the node then they
+might be able to cause the node to do anything. If there is an undetected heap corruption, or if the handler code
+writes over the end of an array, the data used by the event handler
+might be so corrupted that the node behaves in weird ways. Likewise, cosmic radiation can, with very low likelihood,
+invert individual bits stored in the computer's memory; computers on spacecraft need to take these types of faults into account
+in order to work properly.  However, handling these types of failures in a general fashion
+makes distributed protocols more complex and expensive to execute. Thus, most distributed systems use fail-stop
+as a simplifying assumption.</p>
+<p>We make two further simplifying assumptions about node execution.  First, we assume that node failures occur at event boundaries,
+rather than in the middle of event handlers. In practice, the operating system might crash or the power might cut out at any time,
+even in the middle of event execution. If the node is in the middle of modifying its own internal data structures,
+this is not an important difference. Restarting a node will generally reset the contents of memory, so that even when the
+node recovers, the data in memory is lost.  Persistent storage, such as disks, must be updated carefully in order
+for their contents to be correct despite partially completed updates.  The algorithms needed to handle these cases
+can be found in any of a number of database textbooks; they work by using recovery procedures—what happens after a node
+fails and reboots—to provide the abstraction of atomicity to groups of disk updates, so that the updates appear to happen
+as a group or not at all. Building on that abstraction, we can assume any disk operations in an event handler complete
+or do not execute at all.</p>
+<p>The node event handler might also be in the middle of sending a sequence of messages to other
+nodes, and that sequence may be abbreviated by a failure. However, the Standard Fault Model <em>also</em> assumes that network messages can be lost
+in transit.  There is no meaningful difference, as far as other nodes can observe, between a node failing in the middle of
+event execution and the same node failing at the end of the event handler, but where the network lost the last few messages
+from that handler.</p>
+<div class="admonition note">
+<p class="admonition-title">Fail-stop vs. crash failures vs. omission failures</p>
+<p>Some distributed textbooks (and online sources) distinguish between "fail-stop" and "crash failures."
+Although some definitions differ (with each other, and with what we use in this book—welcome to computer science),
+a crash failure is what we have just described: a node can stop in the middle of some operation because it crashed.
+As we discussed, this difference is not that important for practical protocols. Another closely related
+model is where a node may continue to work correctly, but "omits" to send a particular message. In the
+Standard Fault Model, the network may drop messages.  Whether the host drops (as in an omission failure), or the network
+drops (in the Standard Fault Model) is unimportant to the correctness of the protocol.</p>
+</div>
+<p>Second, we assume that handler execution is deterministic.
+If a node is in a specific state—with specific values in its data structures, then its behavior
+is completely determined as a function of the <em>order</em> of events—message deliveries and timeouts—that
+occur at that node. Indeed, when all nodes are deterministic, the behavior of a protocol
+is defined by the union of the sequence of events on each of the individual nodes.
+Of course, events occur in some real-time order, potentially with multiple message handlers executing
+concurrently on different nodes.  However, because both node execution and network delivery is asynchronous
+(as we will discuss), and nodes do not have direct access (except through messages) to the node-local state
+of other nodes, when two nodes are executing handlers concurrently, we cannot tell the difference
+between whether one node executed its handler first, or the other did.</p>
+<div class="marginnote">
+How does deterministic handler execution interact with multiprocessor servers?
+</div>
+<p>This limitation to deterministic node execution might seem to be a significant restriction.
+Most modern computers are multiprocessors, able to execute multiple
+operations in parallel on different cores, or on different hyperthreads (virtual processors) multiplexed on
+the same core. Both cores and hyperthreads can directly share each other's memory. For greater throughput, we
+may want to be able to process arriving messages concurrently across cores and hyperthreads.</p>
+<p>Provided that the behavior of a multicore node when processing concurrent events is always equivalent to
+<em>some</em> sequentially executed order of events, then the Standard Fault Model still applies.
+The only case that is excluded is when the behavior of the node depends on the <em>combination</em> of events
+that is concurrently handled—it behaves differently if it receives message A and message B at the same time,
+versus receives A then B or B then A.  If A and B were sent concurrently by different nodes, they might
+arrive at the node in either order; to be correct, the distributed system needs to account for that
+possibility.  However, we rule out situations where the behavior differs if A and B arrive together.
+This could happen, for example, if the handler for A and the handler
+for B both access the same data structures, without internal locking to serialize access to node-local state.
+Analyzing the behavior of a system whose execution depends on the combination of concurrent events
+delivered to a node would be much more complex and error prone than when the execution is a simple function of
+the order of events on that node. In other words, we choose to learn to walk before we hop in an F15 fighter jet.</p>
+<p>What if we want to write a handler that takes some non-deterministic action, such as to send to a random node?
+We can handle that in the Standard Fault Model by making the randomness input to the protocol.  That is,
+the behavior of the node is defined by its initial state, the sequence of events it processes, <em>and</em> the sequence
+of random choices that the node makes.</p>
+<h4 id="asynchronous-nodes">Asynchronous Nodes</h4>
+<div class="marginnote">
+What is asynchronous execution?
+</div>
+<p>An <strong>asynchronous</strong> model of execution is one where the event handler running on a node
+can take an arbitrary and unpredictable amount of real (wall clock) time to execute.
+At first glance, this might seem unnecessarily general.  If we write an event handler with a handful of lines of code,
+we can be fairly certain that it will not take hours to execute.</p>
+<p>At a more fine-grained level, however, timeliness of execution depends on a number of factors that are
+outside of the control of the distributed system:</p>
+<div class="admonition ednote">
+<p class="admonition-title">jrw comment</p>
+<p>I feel like the following list could be simplified/summarized. I don't think we need to enumerate quite
+so many OS level issues that can cause delays. Suffice it to say, the OS and hardware can cause delays,
+and we can briefly mention a few of these examples in parentheses. Our conclusion is that none of this
+is worth analyzing in the end, anyway, so we don't need to burden the reader with the details.</p>
+</div>
+<ul>
+<li>The contents of the processor cache or translation lookaside buffer (TLB) affect execution speed. If the cache does not
+have the needed data, the execution will stall until the data is fetched from memory.</li>
+<li>Server memory is often tiered, with non-uniform memory access.  Thus, execution time
+depends on where the operating system placed the program's memory.  In a paged virtual memory system,
+execution may require fetching data from disk before it can proceed.</li>
+<li>For programs written in a garbage collected language,
+task execution can be suspended temporarily until the memory compaction completes; the length
+of the suspension depends on the program's memory usage pattern, but also on how much memory the operating system has allocated to the process,
+which in turn may depend on what other tasks are running at the same time on that node.</li>
+<li>When multiple tasks contend for the same core or hyperthread, there may be a delay before the handler is run.
+That delay can be even longer if some tasks have higher priority than the event handler.</li>
+<li>Hardware device interrupts (e.g., delivered when a previously requested disk operation completes, a network
+packet arrives, or the hardware timer expires) will delay execution of the message handler until that interrupt is dealt with.
+Depending on the design of the operating system, a sequence of interrupts can delay execution indefinitely.
+A flood of packets from an attacker, for example, can in some cases cause <em>livelock</em>—where
+the server cannot get any useful work done because it is spending all of its time handling interrupts.</li>
+<li>Contention for shared resources (such as the memory bus) can also mean activity on one core can slow the execution rate of
+another core.</li>
+<li>Modern computers can overheat. To prevent permanent damage, the operating system
+may need to throttle the execution speed of some or all cores to stay within thermal limits.</li>
+<li>Data centers have power consumption limits. Because power infrastructure is expensive to provision, it is common
+to design data center power rails for common case, not peak, aggregate server power.
+Software throttling—reducing the rate that computations execute—is used to keep aggregate power
+underneath the physical limits of the hardware.</li>
+</ul>
+<p>We could go on, but you get the idea.
+We can get around some of these issues with worst case analysis and judicious use of scheduling priority.
+However, in practice, this provides at best very loose bounds. A modern processor can execute
+almost a million instructions in the time it takes to process a page fault and read the data off of disk.
+The worst case can be quite slow. Further, if we depend on a timeliness bound and that assumption is incorrect,
+e.g., because we did not account for some rare cause of a delay, then the distributed system may produce an incorrect result.
+Instead, it is simpler, safer, and often higher performance to build distributed systems without the
+assumption that actions complete in bounded time. We discuss this topic in more depth in a later chapter on
+Clock Synchronization.</p>
+<h2 id="network-faults">Network Faults</h2>
+<p>Networks are a kind of distributed system, specialized for delivering packets of data from one
+node to another, with high performance, reliability, and availability. As a result, their failure modes
+can be quite complex.  Before we discuss how networks fail, we need to discuss how they
+work.  Figure 2 illustrates a simple data center network connecting sixteen nodes.
+It is common to put the first level (also called a ''top of rack'') switch physically close to its
+nodes to allow for cheaper cabling; in the figure, each column of nodes plus the first level switch
+represents a ''rack'' or physically contiguous set of nodes. Power is often delivered to each rack
+or group of racks, so that individual nodes can fail, an entire rack can fail, or groups of racks can fail
+as a unit.</p>
+<p><img alt="Figure 2" src="/book/figures/network.png" /></p>
+<p>Larger scale data center networks can have hundreds of thousands of servers, and so their networks
+are more complex, with both more levels of switches and more links between switches.  We intend this
+only as an example—distributed systems can work regardless of the specific way that nodes and switches
+are interconnected. Sensor networks, for example, often use a mesh topology with nodes as relays for
+traffic between non-adjacent nodes.</p>
+<h3 id="message-corruption">Message Corruption</h3>
+<p>The risk of bit-level corruption of network data is fundamental to communicating over physical distance
+with high bandwidth {<em>Shannon</em>}. One can reduce the rate of communication bit errors by adding redundancy,
+but if the common case is that the data is delivered correctly, then this redundancy is wasted, lowering throughput
+unnecessarily.  Thus, it is common to attach an <strong>error-detection code</strong> to every packet, to allow the receiving node to
+detect (with very high probability) any corruption in the packet data.
+A CRC (Cyclic Redundancy Check) is an example of a code used for packet-level error detection, found in
+Ethernet and  WiFi networks, as well as in storage devices. Provided the corruption is not adversarial (a malicious
+attacker intentionally flipping bits in order to confuse the recipient), a large enough CRC can reduce
+the likelihood of an undetected random bit flip to nearly zero.  To protect against malicious corruption, a
+<strong>cryptographic signature</strong> can be used instead. These codes are detect <em>any</em> corruption in the data
+contained in the original packet.</p>
+<p>If the packet is corrupted, the receiver can simply discard it.
+Thus, we assume the network does not corrupt data—if the network delivers a packet, it contains the data exactly as it was sent.
+Since a message is composed of one or more packets, this means that if a message is delivered,
+it also contains the data exactly as it was sent.  It is unimportant for our purposes where that
+error checking is performed—if the underlying network can deliver corrupted packets,
+the distributed system can add its own error detection at the message level.</p>
+<div class="admonition note">
+<p class="admonition-title">Why not TCP?</p>
+<p>Readers familiar with the principles of computer networks may think that the generality of the network fault
+model is unnecessary.  The widely used Internet TCP (Transmission Control Protocol) is designed to reliably transmit a stream of bytes
+between two hosts despite packet loss, delay, reordering, and duplication—exactly the same network fault model that
+we are using. (TCP relies on the underlying network hardware to detect packet corruption; TCP packets include a code to detect bit-level errors,
+but it is unreliable unless bit errors are extremely rare. As a result, almost all networks do their own, stronger, bit-level error detection.)
+Can't we just assume we are running on top of TCP and treat network faults as a solved problem?</p>
+<p>To explain why, we need to dig into how TCP works under the covers. TCP uses a specific failure handling strategy:
+if the destination does not acknowledge a packet within a timeout, retry a fixed number of times (either three or six depending
+on where we are in the protocol), and then give up and return an error back to the application on the source node.
+If the application gets a connection timeout error, does it mean that the data was or wasn't delivered?  The source cannot tell—it
+might be that the data was never delivered, or it might be that the data was delivered but the destination's acknowledgements were dropped.</p>
+<p>Further, because of the Internet's design, TCP can trigger connection failures even when both sides are able to communicate.
+An example is simply being unlucky; perhaps resending will re-establish the communication link? Another is that
+a mobile device may need to change its IP address as it moves around (e.g., switching from a cell phone carrier to home WiFi in a seamless manner).
+In that case, the TCP connection fails but we have no way of knowing if the bytes in transit were delivered or not, or even if
+the destination knows that source thinks that the TCP connection has failed.  If we start a new connection, its packets may arrive
+at the destination interleaved with the packets sent in the old connection.</p>
+<p>In other words, TCP itself is an unreliable communication mechanism, requiring any application using it to reason about
+its failure cases and how they can be handled correctly. Although we use some of the same techniques as TCP, we need to
+be precise about what happens in all failure cases, and that is easier to describe from first principles.</p>
+</div>
+<div class="admonition ednote">
+<p class="admonition-title">jrw comment</p>
+<p>I think the TCP discussion can be sharpened somewhat: people think TCP handles drops, dups, and reordering.
+But since a connection can drop and we don't know if the last messages were delivered or not, we have to resend those
+messages on reconnection. Hence we have to handle drops.
+But resending the messages is <em>us</em> duplicating them, so we have to handle dups.
+Also, the resent messages may be interleaved with messages sent in the previous connection, so we have to handle reordering.
+This way of phrasing it makes it clear that using TCP does not save us from handling drops, dups, and reordering.</p>
+</div>
+<h3 id="message-loss">Message Loss</h3>
+<p>A message loss is when the network fails to deliver a sent message. One possible reason is packet corruption,
+as we have just discussed. However, we do not assume that the packet loss can be reliably detected.
+Obviously, if the destination gets a garbled message from the sender, it can simply ask for the message to be resent.
+However, the packet header, containing the source and destination addresses, is also communicated over
+network links in the same way as the rest of the packet data, and so it is possible that the packet header,
+and not just the packet data, can be corrupted.
+In that case, the packet may become undeliverable, so corrupted that an intermediate network switch does not know
+where to send the packet, or (if the source address is corrupted) so that the destination node does not know where to send the reply.
+Suppose, for example, a packet is sent from a node on the left of Figure 2 to a node on the right, and the bit corruption happens on the uplink.
+If the destination is garbled, the intermediate switch may need to discard the packet, or it may re-direct it to
+an incorrect destination. That destination will detect the corruption and discard the packet.</p>
+<p>Message corruption is not the only cause of message loss. One factor is that network switches and routers
+are a specialized kind of computer, and so can themselves crash or lose power.  In those cases, the contents of
+any message buffers are (usually) lost; packets could be saved in persistent storage allowing for recovery
+once the switch or router reboots, but (again, usually with the exception of networks operating in deep space)
+it is faster to simply retransmit from the sender after a timeout.</p>
+<p>Network links also have fundamental limits on their bandwidth—the number of bits per second that they can transmit.
+In a multihop network, these limits can also cause message loss.
+To save costs, top of rack switches are often configured with considerably less uplink capacity into the rest of the network
+than the aggregate that can be provided by the nodes in the rack.
+Suppose, for example, that all of the nodes on the left side of Figure 2 send data to the nodes on the right side,
+as fast as possible.  Each sends on its uplink to the first level switch at some maximum rate.
+What happens in this case? The switch cannot send packets out as fast as it is receiving them. This is called
+<strong>outcast congestion</strong>.
+Temporarily, the switch can try temporarily buffering some of the packets, but it will also have a
+physical limit on the amount of memory it has for buffering.  In the limit, it must discard the extra packets.
+A similar situation can occur if all nodes simultaneously send to the same destination; this is called <strong>incast congestion.</strong>
+Some networks are designed to limit or control the amount of incast or outcast congestion as a way to reduce
+congestion-induced packet loss, but these mechanisms do not work perfectly.  Even if they did, at the distributed
+systems layer, we would still need to handle corruption-induced message loss.</p>
+<p>Further, in a shared network, the root cause of outcast or incast congestion may be behavior by an unrelated application.
+As a consequence, even if the source resends a packet, it may still experience congestion and be dropped again.
+With packet loss due to transmission errors, retransmission is usually an effective remedy; with congestion, it may or may not be.</p>
+<h3 id="message-delay">Message Delay</h3>
+<p>Just as we assume that nodes can take an arbitrary amount of time to process an event, we assume that the network
+can take an arbitrary length of time to deliver a message.  Indeed, there is no difference to the protocol whether the
+delay occurs in the network or on the host—either way we cannot count on some message being delivered and some action
+being taken within some time bound.</p>
+<p>The root causes of network message delay overlap with the root causes of dropped messages.
+If a message is dropped—due to bit-level corruption or network congestion—the message will (usually)
+be detected and retransmitted.  To the receiver, this appears to the receiver as if the message arrived
+much later than it was originally sent. In addition, networks can delay messages without dropping them.
+For example, suppose a network switch or router is configured with a large buffer so as to avoid
+dropping packets (requiring retransmission) during incast events (where multiple sources are sending to the
+same destination node at the same time). The message will be eventually delivered, but how long it
+is delayed depends on the size of the buffer, the priority of other traffic queued at the switch,
+and so forth. Although we could put a bound on the delay for network packets sent at the highest priority
+level—based on the maximum number of hops through the network and the sum total of all the buffering
+allocated to that path—the bound is typically too loose to be of much use, especially since it must
+be combined with node asynchrony.</p>
+<h3 id="message-duplication">Message Duplication</h3>
+<p>When a message is dropped, the source node may detect this and retransmit the message. For example,
+before sending the message, the source could set a timer event with a small multiple of the expected time
+it would take to deliver the message and receive a reply. Of course, because the source, destination,
+and network are all asynchronous—processing can be arbitrarily delayed—there is no guarantee
+when the timeout occurs that the message was in fact dropped.  Instead, it could fact have been delayed,
+or delayed and delivered, or delivered and the reply dropped or delayed. Given our assumptions,
+there can be, for any sent message, zero, one, two, or more copies of the same message in the network at
+the same time.</p>
+<p>Can the network insert its own duplicate packets?  In some cases, yes. Suppose some links
+in a network have high packet loss rates, e.g., due to bit-level corruption.  Wireless or satellite
+network links, for example, have much higher packet loss rates than data center links. In some
+cases, it can make sense for intermediate network switches to mask those losses locally—track
+every packet sent on the lossy link, check to see if it was received correctly by the switch
+at the other end of the link, and if not, locally retransmit.  This is particularly true
+if the packet needs to traverse multiple lossy links in a row. We could wait
+for the source to timeout, detect the packet loss, and retransmit, but that can be slower and
+less efficient—requiring the retransmission of the packet over links where it had already
+been successfully delivered.  Of course, the mechanism may sometimes retransmit even though
+the packet was received correctly, creating a duplicate, but the destination needs to detect
+duplicates in any event, since they can be inserted by source retransmission.</p>
+<h3 id="message-reordering">Message Reordering</h3>
+<p>Once we have packet loss recovery, whether done by the source or in the network, we have
+the possibility that packets (messages) can be delivered in a different
+order than was originally sent by the source.</p>
+<p>First, packets sent to different destinations may arrive in a different order than they were sent.
+Suppose node A sends a message to node B in a data center halfway around the planet, and then node A
+sends another message to node C within its own data center; the second is likely to arrive first,
+even if they were sent in a different order. Further, node and network asynchrony means that if
+C forwards the information it receives to B, the message from C to B may arrive before the
+original message from A to B, despite the chain having started later. If it is important for A's
+message to B to arrive before C's message to B, then A needs to wait until B acknowledges the original
+message before starting the chain A to C to B.</p>
+<p>Network asynchrony <em>also</em> means that two messages from the same source to the same destination node
+may be delivered in a different order than how they were sent.  This can seem counterintuitive, and
+it is a common source of bugs in distributed systems. The order in which packets arrive at the destination
+from the same source depends on the precise sequence and timing of packets loss events and
+asynchronous retransmission.</p>
+<p>For example, suppose the source sends a stream of messages: A B C D E. If message C is dropped (e.g.,
+because one of its packets is dropped) and retransmitted, the packets may arrive as A B D E C.</p>
+<p>Further, networks can have multiple possible routes between any two nodes; that way, if a switch
+on one path fails, the message can still be delivered along the other path. For higher bandwidth,
+it is increasingly common for networks to stripe packets across multiple paths when available;
+that is, the network could send A B C D and E each on their own path.
+Because paths are not guaranteed to have equal delay (for that, they would need to have exactly
+the same number of hops, wire length, and amount of competing traffic), this can also cause
+packets (messages) to be delivered out of order.
+In the example above, we might see A B C D E arrive as B D A E C.</p>
+<p>It is straightforward to enforce message ordering when it is needed: the sender adds
+a sequence number to every message; the receiver holds onto messages if they arrive out of order,
+and runs the handler on each message in the sequence specified by the sender, possibly interleaved
+with in-sequence messages from other senders.  We assume the more general case
+in the Standard Fault Model, and instead specifically call out when message ordering is needed.</p>
+<h3 id="network-partitions">Network Partitions</h3>
+<p>Because networks are a mesh of switches and links, it is possible for failures of those components
+to disrupt some, but not all, of the routes between nodes. A <em>network partition</em> occurs when network
+connectivity is split into clusters, where nodes can communicate within a cluster but not between
+clusters.  For example, in Figure 2, when the cable
+connecting a server into the network fails, that server becomes unable to send or receive messages,
+while other nodes can continue communicating as before. Or if both of the cables leading up from the
+switch at the left of Figure 2 become disconnected, the nodes within that rack may be able to communicate
+with each other through the top of rack switch, those outside the rack may also communicate among themselves, but neither can
+cross the failed links.</p>
+<p>We make two further simplifying assumptions which do not always hold in practice
+but (where necessary) can be addressed by adding logic at the packet delivery layer.
+First, network connectivity is symmetric:
+if a node A can send messages to B, B can send messages to A. Second, network connectivity
+is transitive: if A can send messages to B, and B to C, then A can send messages to C.</p>
+<p>Why might these not hold in practice? Some network links are designed to be unidirectional
+(an example would be a free space laser); sending in one direction does not imply being able to
+send in the other. Transceiver faults on bi-directional links might disable
+one direction and not the other.</p>
+<p>However, the more common cause of asymmetric and non-transitive communication is the interaction
+between network failures and <em>dynamic routing</em>.  With dynamic routing,
+each packet contains the source and destination address, and not the route itself.  Instead,
+each host, switch, or router has a table (indexed by the destination address) to determine the next link to move the
+packet closer to the destination.  This is similar to how the US Postal Service can deliver a letter
+given only the unique address and zip code of the recipient.  The source only needs to know the destination
+address; it need not concern itself with how the packet gets there.</p>
+<p>When a switch or link failure occurs, if some route would have gone through the failed
+component, routing tables throughout the network must be updated in order to correctly deliver the packet.
+For example, the switch right next to the failure might be the first to detect the failure, but the
+best alternate path to reach the destination requires tables to be updated closer to the source.
+Routing tables are also updated based on route policy changes (e.g., to choose which company will carry the traffic)
+or to route around congested parts of the network. In both cases, the change occurs even if the old path would still work.</p>
+<p>Since the network itself is a distributed system, the messages that carry routing table updates
+may be corrupted, lost, delayed, duplicated, and reordered, and the switches processing those updates
+(in effect, computers themselves) do so asynchronously.
+Thus, there is no guarantee that the tables used by adjacent routers are consistent with each other;
+this can cause delays or even packet loss, for some packets and not others, or for packets in one direction
+and not the other, until the system completes the intended change. While network connectivity usually
+converges quickly, temporary periods of partial, assymetric, or non-transitive communication are possible.
+Worse, with some protocols, routing anomalies can persist indefinitely.</p>
+<p>How might we mask such partial network failures? One possibility is that the nodes could communicate
+if we allow packets to traverse nodes, in addition to switches.  For example, if two nodes cannot
+directly send messages, but can send/receive to a common node, then we can treat their communication
+as transitive by sending their traffic to each other through that intermediate node.
+More generally, for any partial connectivity, we can treat the true connectivity as being the
+closure of what the network can directly provide, and what the packet layer can provide by routing
+between nodes on top of the underlying network connectivity. Any unidirectional connectivity in the
+resulting graph can be ignored; if we simply do not use those links, the result is symmetric and transitive,
+potentially with partitions.</p>
+<h2 id="implications-of-the-standard-fault-model">Implications of the Standard Fault Model</h2>
+<h3 id="the-two-student-lunch-problem">The Two Student Lunch Problem</h3>
+<p>One implication of the Standard Fault Model is that certain types of problems cannot be solved.
+We will discuss this in more depth later, but to provide some intuition, consider the problem
+of coordinating two nodes to do something at a specific time.  If they both had agreed in advance,
+then no communication is needed.  The more interesting case is to suppose they had not predetermined the
+action to take, and they need to use the (asynchronous, lossy) network to coordinate.
+This is sometimes called the <em>Two Generals Problem</em>, referring to the need for armies to coordinate the
+timing of their actions to be more effective.  To be less militaristic, we will instead describe
+the equivalent Two Student Lunch Problem, illustrated in Figure 3.</p>
+<pre class="highlight"><code class="language-ascii-art">placeholder for figure 3
+
+                   +--------------------------------------------+
+                   |                                            |
+                   |   ____  _         _____ _                  |
+                   |  | __ )(_) __ _  |_   _(_)_ __ ___   ___   |
+                   |  |  _ \| |/ _` |   | | | | '_ ` _ \ / _ \  |
+                   |  | |_) | | (_| |   | | | | | | | | |  __/  |
+                   |  |____/|_|\__, |   |_| |_|_| |_| |_|\___|  |
+                   |           |___/                            |
+                   |                                            |
+                   +--------------------------------------------+
+
+
+                  -----                                     -----
+                 /     \                                   /     \
+                /       \                                 /       \
+                |       |                                 |       |
+                \       /                                 \       /
+                 \     /                                   \     /
+                  --+--                                     --+--
+                    |                                         |
+                    |      (___)                    (___)     |
+                    |      |   |                    |   |     |
+              ------+------|   |                    |   |-----+------
+                    |       \_/                      \_/      |
+                    |                                         |
+                    |                                         |
+                    |                                         |
+                    |                                         |
+                    X                                         X
+                   / \                                       / \
+                  /   \                                     /   \
+                 /     \                                   /     \
+
+</code></pre>
+<p>Two students, using only an asynchronous lossy message network (Signal, but where some messages are lost or delayed),
+need to coordinate where and when to meet for lunch, without having pre-determined the decision.
+Neither wants to eat alone, so they won't show up unless they know the other person will be there.</p>
+<ul>
+<li>Suppose student A sends a message to student B saying, let's meet at Big Time at noon,
+and suppose the message happens to be delivered in a timely manner.
+Since messages can be dropped, student A does not know if student B received the message, and
+if they haven't, they won't show up.</li>
+<li>To resolve student A's uncertainty about what student B knows, student B sends a message acknowledgment back to student A.
+Suppose this message is also delivered in a timely manner.  Student A now knows that the original message to student B was received;
+in other words, A knows that B knows that A sent the original message.
+However, B does not know whether its message to A was received. It might have been lost; in that case, A won't
+show up, since they won't know that B got the original message.</li>
+<li>To resolve B's uncertainty about what A knows, A sends an acknowledgment to B's acknowledgment back to B.
+Suppose this message is also delivered in a timely manner.
+B now knows that A received the acknowledgment.  However, A does not know whether its ack of the ack was received.
+It might have been lost.</li>
+</ul>
+<p>We could keep going without getting anywhere. What is interesting about this example is that
+all the messages are in fact delivered.  The mere possibility of message loss
+is sufficient to prevent the students from coming to an agreement.</p>
+<h3 id="reliable-failure-detection">Reliable Failure Detection</h3>
+<p>Within the Standard Fault Model, it is not possible for a node to reliably determine that a different node has failed.
+Suppose node A pings node B, and gets no response.  One possibility is that node B has failed, and that is why
+it is non-responsive.  Another possiblity is that node B is a bit slow; it is still working, but say the garbage collector
+has kicked in, and so will not reply within the expected time bound.  Yet another possiblity is that the network
+is being slow, for example, node B has not received the original message from node A yet, or it was received but the reply
+was delayed.</p>
+<p>From A's perspective, all of these appear identical.  No matter how long node A waits, there is no guarantee that node
+B failed versus is merely taking a long time. As a result, distributed systems need to define message handlers
+that behave correctly whether or not some other node has failed.  For example, if node B sets a timeout so that
+it can take over if A has failed, it must also account for the possibility that node A has not in fact failed and
+in fact might still be sending messages to node A or other nodes in the system.</p>
+<h3 id="distributed-system-validation">Distributed System Validation</h3>
+<p>Another implication is what it means for a distributed system to
+be failure resilient. The behavior of a distributed system is defined
+by the initial state at each of its nodes, by its event handlers,
+and by the specific sequence of events—message deliveries and timeouts—at 
+each node. Depending on the structure of the distributed system,
+there are often many possible next events to process—any message that
+was previously sent by any node, or any timeout that was previously set,
+could be the next event to be delivered.</p>
+<p>It may seem counterintuitive that <em>any</em> message might be the next event,
+but it is a direct consequence of asynchronous, unordered message delivery
+with duplicates. A specific message might take a circuitous path and then be delivered;
+other messages sent before it might instead be delayed and so the message sent later
+is delivered first; the message may be dropped so it is never delivered;
+with duplicates, the message may be delivered once and then delivered
+again some time later. To be correct, the distributed system
+must be correct for <em>all</em> possible sequences of events.</p>
+<p>In this model, failures - such as a node failure or a network partition - appear as
+a constraint on possible event sequences. If we can show our program works correctly for all possible
+event sequences, we are automatically fault tolerant.
+A failed node neither sends nor receives any additional messages, but that is already
+a possible outcome of asynchrony. Likewise, a network partition means that no additional
+messages will be delivered across the partition, but that also is a possible outcome of
+asynchrony.</p>
+<p>How do we know if our distributed system behaves as we want it to?
+Testing - evaluating the system on a single sequence of events - is at best
+only a partial answer. Testing can assure that some sequence of events
+produced the right outcome, but it cannot guarantee that no possible
+sequence of events will lead to incorrect behavior.</p>
+<p>Before discussing how we might validate a distributed system given that testing
+is inadequate, it is useful to distinguish two types of properties
+we might like to prove about a distributed system.</p>
+<ul>
+<li>
+<p>Correctness: A correctness property specifies that under all possible
+event sequences, the system will never do the wrong thing.  An example
+is that a file system should never lose your data, unless you asked
+for it to be deleted, regardless of whether a crash happens at one moment
+or another. Correctness properties can be proven by showing that
+the distributed system obeys some constraint in the initial state (it
+hasn't lost your file data yet), and that every event that can be delivered
+maintains that invariant - if it was true before the event, it will still
+be true after the event (e.g., that no event causes your file data to be
+discarded).</p>
+</li>
+<li>
+<p>Liveness: A liveness property is that the system produces an answer
+under certain conditions. An example is that the file system provides
+your data when asked.  A weak version of a liveness property
+can be shown by finding a specific sequence of events that leads to
+the system returning an answer - this shows that some sequence is live,
+but it doesn't show that the system will execute that sequence.
+A more useful property is to show that all possible sequences of events,
+say after a node failure, are live, provided that certain types of
+faults are excluded, such as that no further node failures occur and that
+all messages are delivered in a timely manner.</p>
+</li>
+</ul>
+<p>Both types of reasoning are used by industry, as well as a third, weaker
+validation technique called model checking.  With model checking,
+we enumerate all possible sequences of events through exhaustive search,
+either to a certain depth or by randomly choosing the next event to process.
+If it is tractable to enumerate all possible states,
+this serves as a proof. In most realistic distributed systems, however,
+the set of possible states is far too large to be explicitly enumerated.
+In that case, model checking can only validate that none of the sequences
+that were explored led to an incorrect result, but that
+possibly some other, longer sequence might lead to an error.</p>
+<div class="admonition note">
+<p class="admonition-title">Model checking and symmetry</p>
+<p>A key step in making model checking more practical is to observe
+that we can skip enumerating event sequences if they are identical
+to ones the model checker has already explored. The state of a
+distributed system is the cross-product of the local state on every
+node plus the set of pending messages and timeouts. If an event
+causes the global state to return to an already explored state,
+we can terminate that branch of the search. For example, if
+a timeout causes a message to be resent, the network state
+does not change - two copies of a message are the same as one
+if the network is free to duplicate a message.  Similarly,
+delivering a message does not change the network state, since
+the message might be duplicated. These types of optimizations
+can dramatically reduce the search space.</p>
+<p>Another key optimization is to combine model checking with
+more targeted testing.  For example, we may want to specifically
+test a system to determine if it tolerates network partitions
+correctly. We could then use the model checker to search for an
+intermediate state, such as that the system has processed
+some file updates. We can then simulate a network partition -
+preventing certain types of messages from being delivered -
+and then search exhaustively from that point forward.</p>
+<p>Similarly, in many useful distributed systems, a set of nodes
+cooperate to provide some service. If the service is fault tolerant,
+it needs to handle failures of any nodes in the set.  Often,
+the nodes are equivalent - any one can fail, or take over from a failed
+node. In that case, it is not necessary to simulate every different
+node failing, but rather only one example failure is needed.</p>
+</div>
+<h2 id="other-fault-models">Other Fault Models</h2>
+<h3 id="local-clock-synchronization">Local Clock Synchronization</h3>
+<p>Although the Standard Fault Model is quite commonly used, another widely used, and closely related, model
+adds that nodes can reliably detect the passage of local time within some tolerance.  Almost all computers
+include a local clock, which tracks time within some tolerance, such as it will not drift away from wall clock
+time by more than one in a million. Local clock interrupts occur in the kernel and at the highest
+execution priority (and so contention with other operations can be assumed to be negligible),
+and so handler execution can be assumed to happen within some tolerance of real time. Nevertheless,
+other node handler execution and the delivery of messages are asynchronous.</p>
+<p>This property is most commonly used to implement <em>leases</em> - time-limited permission for a node to do something,
+such as to hold an exclusive lock where no other node holds the lock within that period of time.
+The node can request the lease from another server, and refresh it periodically. However, if no
+further communication happens, e.g., because of a network partition, the node holding the lease
+will, within some tolerance, fail-stop - stop using the lease before its lease expires. The node
+that granted the lease can then reclaim the lease simply by waiting long enough - for the lease to expire,
+plus tolerance for clock drift on the lease holder, plus tolerance for clock drift on the lease granter.
+We will discuss the implementation and use of leases in more detail in a later chapter.</p>
+<h3 id="synchrony">Synchrony</h3>
+<p>A stronger assumption is that nodes operate synchronously - that if the node is operating correctly,
+the amount of time taken by a handler is bounded, and the system will fail-stop instead of taking an
+arbitrary amount of time.  Similarly, we can assume the network operates synchronously, so that messages
+are delivered within a time bound or not at all. As we mentioned, the problem with making stronger
+assumptions is that the resulting systems will only work correctly if those assumptions hold.
+Given that caveat, assuming synchrony can result in dramatically simpler algorithms.
+For example, it is possible in a synchronous model to build a reliable failure detector -
+to distinguish between whether a node is slow (still alive, executing the protocol) or failed (in a fail-stop model,
+you can safely ignore that node from that point onwards).  Synchronous distributed systems have found some
+use in embedded systems settings where real-time execution constraints are fundamental to the system's
+correct behavior, but are less relevant in data center and virtualized environments, although they remain an active
+area of research.</p>
+<h3 id="byzantine-non-fail-stop-computation">Byzantine (Non-Fail Stop) Computation</h3>
+<p>In the other direction, we can generalize the Standard Fault Model to allow non-fail stop behavior.
+This is often called Byzantine Fault Tolerance. Instead of assuming that nodes can detect when they
+are misbehaving and stop, we might instead allow a subset of the nodes to fail in unpredictable ways,
+such as to send arbitrary messages or to create messages that pretend to be from other, correct, nodes
+in order to confuse the recipient. These protocols limit the number of Byzantine nodes for the practical
+reason that if all nodes behave arbitrarily, little can be said about a system's properties.
+These models assume that any node can turn malicious, that we don't know which nodes will become malicious,
+but that only a subset actually do turn malicious.  Some models add the additional constraint that some limited
+number of non-malicious nodes can have fail-stop failures.</p>
+<p>Interestingly, it is possible to do useful work even when some nodes are Byzantine and other nodes
+have failed. One popular example is Bitcoin, which operates correctly with an assumption that a majority
+(more precisely, a majority of the computing power) behaves according to the protocol. Depending on the
+specific assumptions about how the Byzantine minority behaves, a minority of less than half or in some cases, a third,
+of the total computing power cannot persistently disrupt correctness or progress by the majority.
+Other, more academic work, has focused on building Byzantine versions of some of the algorithms we describe in this book.
+Since these algorithms are less efficient than the ones designed under the Standard Fault Model, they have not been
+widely deployed.</p>
+<p>Of course, you can combine some of these ideas (eg, maybe you assume asynchronous network delivery but synchronous hosts).
+Our goal in the book is to help the reader understand these issues in depth, we focus on one model that is the most widely used today.</p>
+<div class="admonition note">
+<p class="admonition-title">Disaggregated memory</p>
+<p>Although we restrict ourselves in this book to distributed systems where all state is local and can only
+be directly accessed by a single node), this is a simplification that is not always true in practice.
+Decades ago, it was common to have multi-ported disk storage, where multiple servers could directly
+read and write disk blocks on a shared physical disk.
+More recently, some cloud equipment providers have introduced mechanisms to allow for DRAM memory devices
+to be shared between adjacent servers, using the Compute Express Link (CXL) standard.
+This approach is often called "disaggregated memory" or "disaggregated storage" as the memory or storage
+is not local to any of the machines using the memory, but instead pooled in a separate device.
+Importantly, these mechanisms introduce new failure modes.
+For example, with a two-ported disk or two-ported memory,
+either server could fail, the disk or memory could fail, the communication between either or both of the servers
+and the disk/memory could fail, or the communication between the servers could fail.</p>
+<p>However, we can abstract away these differences, by imagining that the shared disk or memory has its own controller,
+or computational element.  (In most cases, the devices do in fact have a controller, although the controller operation
+is often fixed by the device manufacturer, rather than being reprogrammable at runtime as with a normal computer.)
+In this view, the controller is a special type of node that receives read and write messages
+from its adjacent servers, performs the requested writes, and replies with requested read data back to those servers.
+Likewise, network routers and switches are a special type of node that receives and sends packets on various links
+depending on the contents of headers of the packets it receives.
+Thus, we can analyze disaggregated memory systems, and also computer networks, as a special type of distributed system,
+using the concepts in this book to understand their fault tolerant behavior.</p>
+</div>
+
+  
+          
+          
+        </div>
+        <footer id="bottom-bar">
+          
+            <a class="left" href="/book/01-intro.html" title="Introduction"><i class="fa-solid fa-left-long"></i></a>
+          
+          
+            <a class="right" href="/book/rpc.html" title="Remote Procedure Call"><i class="right fa-solid fa-right-long"></i></a>
+          
+        </footer>
+      </div>
+    </div>
+  </body>
+</html>

@@ -1,0 +1,475 @@
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <title>Distributed Objects &ndash; Distributed Systems: Principles and Practice</title>
+
+    
+
+    <!-- Polyfill (fakes modern web APIs on older browsers; load first) -->
+    <script src="/book/third-party/polyfill/js/polyfill.min.js"></script>
+
+    <link rel="stylesheet" type="text/css" href="/book/third-party/normalize/normalize.css">
+
+    <!-- Fonts -->
+    <link rel="stylesheet" type="text/css" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:400,400italic,600">
+    <link rel="stylesheet" type="text/css" href="https://fonts.googleapis.com/css?family=Inconsolata:400,700">
+    <link rel="stylesheet" type="text/css" href="/book/third-party/fontawesome/css/all.min.css">
+
+    <!-- jQuery -->
+    <script src="/book/third-party/jquery/js/jquery.min.js"></script>
+
+    <!-- Highlight -->
+    <link rel="stylesheet" type="text/css" href="/book/third-party/highlight/css/highlight-default.css">
+
+    <!-- SVG -->
+    <script src="/book/third-party/svg/js/svg.min.js"></script>
+
+    <!-- MathJax -->
+    <script>
+      window.MathJax = {
+        tex: {
+          // Allow $ to delimit math mode, to make the behavior inside and outside markdown blocks
+          // the same.
+          inlineMath: [['$', '$'], ['\\(', '\\)']]
+        }
+      };
+    </script>
+    <script src="/book/third-party/mathjax/tex-chtml.js"></script>
+
+    <!-- First-party static resources -->
+    <script src="/book/js/main.js"></script>
+    <script src="/book/js/jrw-svg.js"></script>
+    <script src="/book/js/trace-visualization.js"></script>
+    <script src="/book/js/notes.js"></script>
+
+    <link rel="stylesheet" type="text/css" href="/book/css/main.css">
+
+    
+  </head>
+
+  
+  
+
+  <body>
+    <div id="wrapper">
+      <nav id="sidebar"><ol start="0">
+        
+        
+          
+            
+          
+            <a href="/book/preface.html">
+          
+          <li>Preface</li>
+          
+            </a>
+            
+          
+        
+          
+        
+          
+            
+          
+            <a href="/book/01-intro.html">
+          
+          <li>Introduction</li>
+          
+            </a>
+            
+          
+        
+          
+        
+          
+            
+          
+            <a href="/book/02-foundations.html">
+          
+          <li>Foundations</li>
+          
+            </a>
+            
+          
+        
+          
+        
+          
+            
+          
+            <a href="/book/rpc.html">
+          
+          <li>Remote Procedure Call</li>
+          
+            </a>
+            
+          
+        
+          
+        
+          
+            
+          
+            <a href="/book/primary-backup.html">
+          
+          <li>Primary-Backup Replication</li>
+          
+            </a>
+            
+          
+        
+          
+        
+          
+            <div class="sidebar-section">
+            <span class="sidebar-section-header">Consensus</span>
+            
+              
+          
+            <a href="/book/distributed-objects.html">
+          
+          <li>Distributed Objects</li>
+          
+            </a>
+            
+              <div class="toc">
+<ul>
+<li><a href="#add-only-sets">Add-only Sets</a><ul>
+<li><a href="#building-the-protocol">Building the Protocol</a></li>
+<li><a href="#fixing-the-protocol">Fixing the Protocol</a></li>
+</ul>
+</li>
+<li><a href="#readwrite-registers">Read/Write Registers</a><ul>
+<li><a href="#a-naive-approach">A Naïve Approach</a></li>
+<li><a href="#versioning-updates">Versioning Updates</a></li>
+<li><a href="#ensuring-linearizability">Ensuring Linearizability</a></li>
+<li><a href="#correctness">Correctness</a></li>
+</ul>
+</li>
+<li><a href="#discussion">Discussion</a></li>
+</ul>
+</div>
+
+            
+          
+        
+            
+              
+          
+            <a href="/book/consensus.html">
+          
+          <li>Consensus and State Machine Replication</li>
+          
+            </a>
+            
+          
+        
+            
+            </div>
+          
+        
+          
+            
+          
+            <a href="/book/glossary.html">
+          
+          <li>Glossary</li>
+          
+            </a>
+            
+          
+        
+          
+        
+        
+          
+          
+            <a href="/book/style-guide.html">
+          
+          <li>Style Guide</li>
+          
+            </a>
+            
+          
+        
+        
+      </ol></nav>
+      <div id="main-column">
+        <header id="top-bar">
+          <i class="fa-solid fa-bars" id="sidebar-button"></i>
+          <h1 class="book-title"><a href="/book/">Distributed Systems: Principles and Practice</a></h1>
+        </header>
+        <div id="content">
+          <h1>Distributed Objects</h1>
+          <div class="subtitle">Quorums and Versions</div>
+          
+  
+<!-- TODO: find a way to refer to and link to chapters by some reference string. -->
+
+<p>Our overarching goal in the first two parts of this book is to learn how to build fault-tolerant systems from faulty components communicating over faulty networks.
+In a previous chapter, we saw how the primary-backup approach can be used to tolerate the complete failure of some nodes.
+However, to call the system as a whole "fault-tolerant" would be an overstatement.
+The view server was a single point of failure, and the system would permanently cease functioning if the wrong server nodes failed at the wrong time, even when there were ample "standby backups."</p>
+<p>In this chapter, we will take the first step towards our goal by building two different distributed objects: an add-only set and a read/write register.
+In these protocols, we will utilize <strong>quorums</strong> and <strong>versions</strong>, which are a fundamental building blocks of Paxos and other algorithms we will see throughout the remainder of this book.</p>
+<div class="admonition note">
+<p class="admonition-title">Definition: Quorum</p>
+<p>A <strong>quorum</strong> is a set of nodes which can collectively execute an operation.</p>
+</div>
+<p>The most commonly used quorum is the <strong>majority quorum</strong> where any majority of nodes can vote to execute an operation.
+Because any two majorities overlap, there will always be at least one node to carry forward knowledge of the operation's execution to any other quorum.</p>
+<div class="admonition collapsible">
+<p class="admonition-title">Aside: Quorum Systems</p>
+<p>A <strong>quorum system</strong> is the set of all possible quorums that can vote to execute operation.
+For example, if the set of servers is <span class="arithmatex">\(\Sigma\)</span>, then <span class="arithmatex">\(\left \{ Q \subseteq \Sigma : 2 \cdot |Q| &gt; |\Sigma| \right \}\)</span> is the majority quorum system.</p>
+</div>
+<p>Often, when we replicate data in a distributed system, as we did in the primary-backup approach and as we'll do when writing to quorums, we will need to deal with conflicting updates to the same piece of distributed state.
+A <strong>version</strong> is metadata that is attached to a portion of local state as well as updates to that local state that describes which updates should take precedence.
+Versions are similar to logical clocks in that they are <em>totally ordered</em>, but unlike logical clocks, the versions attached to updates must be <em>unique</em>.</p>
+<div class="admonition todo collapsible">
+<p class="admonition-title">Todo</p>
+<p>Check if we've already discussed logical clocks.</p>
+</div>
+<h2 id="add-only-sets">Add-only Sets</h2>
+<p>In this chapter, we will build a protocol for a distributed set that supports two operations: <span class="arithmatex">\(\texttt{add}(e)\)</span>, which adds the element <span class="arithmatex">\(e\)</span> to the set and <span class="arithmatex">\(\texttt{contains}(e) \to b\)</span> which returns the boolean <span class="arithmatex">\(b\)</span> indicating whether <span class="arithmatex">\(e\)</span> is an element of the set.
+As usual, our nodes will be divided into clients and servers.
+There is a fixed number of servers, <span class="arithmatex">\(n\)</span>, and the addresses of the servers are known to all clients and each other.
+However, the number of clients is unbounded and their addresses are not known in advance.
+We assume the Standard Fault Model: nodes can fail by crashing but otherwise follow the protocol we specify, and messages can be arbitrarily delayed and reordered but not altered by the network.</p>
+<p>The goal of our protocol is to tolerate the failure of as many servers as possible while preserving <em>linearizability</em>.
+From the perspective of the <span class="arithmatex">\(\texttt{add}\)</span> and <span class="arithmatex">\(\texttt{contains}\)</span> operations, our system should be indistinguishable from a single-node, single-threaded process.</p>
+<h3 id="building-the-protocol">Building the Protocol</h3>
+<p>Using the goals we've set for ourselves as guides, let's build a protocol.
+In order to tolerate the failure of as many servers as possible, the client will implement <span class="arithmatex">\(\texttt{add}(e)\)</span> by broadcasting <span class="arithmatex">\(e\)</span> to all servers.
+Each server will maintain a local set, and upon receiving a new element, will add the element to its local set and respond to the client.
+Before returning, the client should wait for responses from the servers.
+However, it cannot wait for all of them; if one of the servers fails, it would be stuck waiting forever.
+It will instead wait for a majority of the servers to respond.</p>
+<p>Similarly, the client will implement <span class="arithmatex">\(\texttt{contains}(e)\)</span> by broadcasting a query for <span class="arithmatex">\(e\)</span> to all servers.
+Each server will respond with a boolean indicated whether <span class="arithmatex">\(e\)</span> is in its local set.
+The client again waits for a majority of servers to respond.
+If <em>any</em> server responded <span class="arithmatex">\(\texttt{true}\)</span>, the client returns <span class="arithmatex">\(\texttt{true}\)</span>; otherwise, if all servers that responded responded <span class="arithmatex">\(\texttt{false}\)</span>, the client returns <span class="arithmatex">\(\texttt{false}\)</span>.</p>
+<pre class="highlight"><code>&lt;Protocol v1 specification&gt;</code></pre>
+<p>Now let's see if this protocol preserves linearizability.
+First, we will prove that if a client executes <span class="arithmatex">\(\texttt{contains}(e_0)\)</span> after an <span class="arithmatex">\(\texttt{add}(e_0)\)</span> already completed, then it will return <span class="arithmatex">\(\texttt{true}\)</span>.
+When <span class="arithmatex">\(\texttt{add}(e_0)\)</span> finishes, we know that the local sets of a majority of servers contain <span class="arithmatex">\(e_0\)</span>.
+And when the client executes <span class="arithmatex">\(\texttt{contains}(e_0)\)</span>, it must query a majority of servers.
+Because any two majorities have non-empty intersection, at least one of the servers it queries will have <span class="arithmatex">\(e_0\)</span> in its local set and respond with <span class="arithmatex">\(\texttt{true}\)</span>.
+Therefore, the result of <span class="arithmatex">\(\texttt{contains}(e_0)\)</span> will be <span class="arithmatex">\(\texttt{true}\)</span>.<sup id="fnref:finishes-executing"><a class="footnote-ref" href="#fn:finishes-executing">1</a></sup></p>
+<div class="admonition collapsible">
+<p class="admonition-title">Aside: Flexible Quorums</p>
+<p>The protocol we've described used majority quorums for both <span class="arithmatex">\(\texttt{add}\)</span> and <span class="arithmatex">\(\texttt{contains}\)</span>.
+While this arrangement allows the protocol to tolerate the most failures while maintaining availability, it is not the only possibility.</p>
+<p>The important fact we used in the argument above is that any <span class="arithmatex">\(\texttt{add}\)</span> quorum overlaps with any <span class="arithmatex">\(\texttt{contains}\)</span> quorum.
+That is, if <span class="arithmatex">\(\mathcal{Q}_\texttt{add}\)</span> is the quorum system used by the <span class="arithmatex">\(\texttt{add}\)</span> protocol and <span class="arithmatex">\(\mathcal{Q}_\texttt{contains}\)</span> be the quorum system used by <span class="arithmatex">\(\texttt{contains}\)</span>, then the property we require is <span class="arithmatex">\(\forall Q_A \in \mathcal{Q}_\texttt{add} \forall Q_C \in \mathcal{Q}_\texttt{contains} : Q_A \cap Q_C \ne \emptyset\)</span>.</p>
+<p>We could, for example, use quorums of size <span class="arithmatex">\(n\)</span> for <span class="arithmatex">\(\texttt{add}\)</span> and size 1 for <span class="arithmatex">\(\texttt{contains}\)</span>.
+This would allow reading from any single server, but if any server failed, no other elements could be added to the set!
+Similarly, we could use quorums of size <span class="arithmatex">\(n - 1\)</span> for <span class="arithmatex">\(\texttt{add}\)</span> and size 2 for <span class="arithmatex">\(\texttt{contains}\)</span>.
+This would allow reading from any pair of servers, and we could still add elements to the set even after a single server failure.</p>
+<p>In general, when we're using a quorum system where all quorums are of a fixed size, that size must be larger than <span class="arithmatex">\(f\)</span> (the number of failures we wish to tolerate).
+And because the <span class="arithmatex">\(\texttt{add}\)</span> and <span class="arithmatex">\(\texttt{contains}\)</span> quorums must overlap, <span class="arithmatex">\(f\)</span> is maximized at <span class="arithmatex">\(\left \lfloor \frac{n-1}{2} \right \rfloor\)</span> when both operations use the majority quorum system.</p>
+</div>
+<p>Now comes the question: are we done?
+Does the simple protocol we've built fully guarantee linearizability.
+Think about it, take some time, and try to justify an answer.
+If the protocol does guarantee linearizability, you should try to prove it.
+If the protocol doesn't guarantee linearizability, you should try to produce an execution of this protocol which couldn't have been produced by a single server executing operations sequentially.</p>
+<hr />
+<p>The answer is that we are not done.
+The protocol above has a flaw.
+Our <span class="arithmatex">\(\texttt{contains}\)</span> protocol is guaranteed to return <span class="arithmatex">\(\texttt{true}\)</span> if an <span class="arithmatex">\(\texttt{add}\)</span> for the same element finished executing but is allowed to return any value if an <span class="arithmatex">\(\texttt{add}\)</span> is in progress.
+This in itself is fine, but if two <span class="arithmatex">\(\texttt{contains}\)</span> operations are executed sequentially during the execution of an <span class="arithmatex">\(\texttt{add}\)</span>, we may run into problems.
+As a concrete counter-example to linearizability, let's look at a trace where there are three servers: <span class="arithmatex">\(\sigma_1\)</span>, <span class="arithmatex">\(\sigma_2\)</span>, and <span class="arithmatex">\(\sigma_3\)</span>.</p>
+<div id="trace-non-linearizable-set-read"></div>
+<script type="module">
+new TraceVisualizer(document.getElementById("trace-non-linearizable-set-read"), {
+  nodes: [
+    { id: "c1", label: "$c_1$" },
+    { id: "c2", label: "$c_2$" },
+    { id: "c3", label: "$c_3$" },
+    { id: "s1", label: "$\\sigma_1$" },
+    { id: "s2", label: "$\\sigma_2$" },
+    { id: "s3", label: "$\\sigma_3$" },
+  ],
+  events: [
+    { from: "c1", to: "s1", label: "$\\text{add}(e_0)$" },
+    { from: "c2", to: "s1" },
+    { from: "c2", to: "s2", startTime: WITH_PREVIOUS },
+    { from: "s1", to: "c2" },
+    { from: "s2", to: "c2", startTime: WITH_PREVIOUS },
+    { from: "c3", to: "s2" },
+    { from: "c3", to: "s3", startTime: WITH_PREVIOUS },
+    { from: "s2", to: "c3" },
+    { from: "s3", to: "c3", startTime: WITH_PREVIOUS },
+  ],
+  config: {
+    // animate: true,
+  }
+});
+</script>
+
+<ol>
+<li><span class="arithmatex">\(\texttt{add}(e_0)\)</span> starts on one client, <span class="arithmatex">\(c_1\)</span>, and the request is only delivered to <span class="arithmatex">\(\sigma_1\)</span>. The other requests are delayed in the network.</li>
+<li>Another client, <span class="arithmatex">\(c_2\)</span>, executes <span class="arithmatex">\(\texttt{contains}(e_0)\)</span> and gets responses from <span class="arithmatex">\(\{\sigma_1, \sigma_3\}\)</span>, so the result is <span class="arithmatex">\(\texttt{true}\)</span>.</li>
+<li>Yet another client, <span class="arithmatex">\(c_3\)</span>, executes <span class="arithmatex">\(\texttt{contains}(e_0)\)</span> and gets responses from <span class="arithmatex">\(\{\sigma_2, \sigma_3\}\)</span>, so the result is <span class="arithmatex">\(\texttt{false}\)</span>.</li>
+<li>The remaining requests for both <span class="arithmatex">\(\texttt{add}\)</span>s are delivered, as are the responses. The <span class="arithmatex">\(\texttt{add}\)</span>s both complete (but it's too late).</li>
+</ol>
+<p>This is a counter-example to linearizability because our third client observed that <span class="arithmatex">\(e_0\)</span> was missing from the distributed set after the second client had already observed it was present.</p>
+<h3 id="fixing-the-protocol">Fixing the Protocol</h3>
+<p>So, we have a problem which is that the protocol for <span class="arithmatex">\(\texttt{contains}\)</span> doesn't guarantee that a later <span class="arithmatex">\(\texttt{contains}\)</span> observes the same element in the set.
+How do we fix this?
+Fortunately, we've already implemented a protocol that guarantees exactly this property!
+This is the exact property that <span class="arithmatex">\(\texttt{add}\)</span> guarantees.
+We will therefore modify the protocol for <span class="arithmatex">\(\texttt{contains}\)</span>.
+Now, when a client observes that the element is in the distributed set, it will add it back to the set to ensure that information is durable before returning.</p>
+<pre class="highlight"><code>&lt;Protocol for v2&gt;</code></pre>
+<div class="admonition collapsible">
+<p class="admonition-title">Aside: Early Returning in the Common Case</p>
+<p>TODO: note here about not adding back to the set when we see a majority already has it</p>
+</div>
+<p>Now, we need to show that any execution of this protocol is indistinguishable from some sequential execution of the same operations which respects the real-time orderings of those operations.
+In a sequential execution of <span class="arithmatex">\(\texttt{add}\)</span> and <span class="arithmatex">\(\texttt{contains}\)</span> operations, we know that the return value of <span class="arithmatex">\(\texttt{contains}\)</span> is <span class="arithmatex">\(\texttt{true}\)</span> if and only if there was a previous <span class="arithmatex">\(\texttt{add}\)</span> for the same element.</p>
+<div class="admonition todo">
+<p class="admonition-title">Todo</p>
+<p>Finish this argument up. Or just cut it.
+A lot of the terminology here depends on the terminology we've setup in previous chapters, so we need to make sure that's consistent too.</p>
+</div>
+<h2 id="readwrite-registers">Read/Write Registers</h2>
+<p>Now that we've built a distributed set, let's look at another (deceptively) simple distributed object: a distributed register.
+This register will support two operations: <span class="arithmatex">\(\texttt{write}(v)\)</span> which sets the value of the register to <span class="arithmatex">\(v\)</span> and <span class="arithmatex">\(\texttt{read} \to v\)</span> which returns the current value of the register.
+The register only holds a single value and <span class="arithmatex">\(\texttt{write}\)</span> overwrites that value completely.</p>
+<p>Other than the operations we'd like to support, the setup is the same as for the distributed set.
+We have <span class="arithmatex">\(n\)</span> servers and would like to tolerate as many failures as possible while maintaining availability.
+We must guarantee linearizability in all cases.</p>
+<h3 id="a-naive-approach">A Naïve Approach</h3>
+<p>Given that this object looks so much like the <span class="arithmatex">\(\texttt{add}\)</span>/<span class="arithmatex">\(\texttt{contains}\)</span> set we just built, can we use a very similar approach?
+Let's try writing to and reading from a majority.
+In this naïve protocol, when executing <span class="arithmatex">\(\texttt{write}(v_0)\)</span>, the client sends <span class="arithmatex">\(v_0\)</span> to all servers.
+Each server sets its local register value to <span class="arithmatex">\(v_0\)</span> and replies.
+The client waits for responses from a majority before returning.</p>
+<p>When executing a <span class="arithmatex">\(\texttt{read}\)</span>, the client asks all servers for their local register state and waits for a majority to reply.
+But now we already have a problem.
+If the client observes multiple values when reading from a quorum, which should it return?</p>
+<p>To make this situation concrete, let's look at a trace with three servers: <span class="arithmatex">\(\sigma_1\)</span>, <span class="arithmatex">\(\sigma_2\)</span>, and <span class="arithmatex">\(\sigma_3\)</span>.</p>
+<pre class="highlight"><code>&lt;Space time diagram here&gt;</code></pre>
+<ol>
+<li>One client successfully executes <span class="arithmatex">\(\texttt{write}(v_1)\)</span> after getting replies from <span class="arithmatex">\(\sigma_1\)</span> and <span class="arithmatex">\(\sigma_3\)</span>. (Its message to <span class="arithmatex">\(\sigma_2\)</span> is delayed in the network).</li>
+<li>Another client then successfully executes <span class="arithmatex">\(\texttt{write}(v_2)\)</span> using <span class="arithmatex">\(\sigma_2\)</span> and <span class="arithmatex">\(\sigma_3\)</span>. (Its message to <span class="arithmatex">\(\sigma_1\)</span> is delayed).</li>
+<li>Another client then executes a <span class="arithmatex">\(\texttt{read}\)</span> and gets <span class="arithmatex">\(v_1\)</span> from <span class="arithmatex">\(\sigma_1\)</span> and <span class="arithmatex">\(v_2\)</span> from <span class="arithmatex">\(\sigma_2\)</span>.
+   In order to preserve linearizability, it <em>must</em> return <span class="arithmatex">\(v_2\)</span>, but there is no way to guarantee that.</li>
+</ol>
+<h3 id="versioning-updates">Versioning Updates</h3>
+<p>Obviously, we need a way for reading clients to choose between the values it sees during a <span class="arithmatex">\(\texttt{read}\)</span> and decide which value to return.
+To that end, when writing a value to the register, each client will attach a <em>version</em> to the value, and the servers will maintain the latest value and version they've received from in any <span class="arithmatex">\(\texttt{write}\)</span>.
+Importantly, versions must be totally ordered so clients can always decide which value "wins."
+Each client keeps a version number for the most recent value it wrote to the shared set and picks a new, larger version when initiating a <span class="arithmatex">\(\texttt{write}\)</span>.
+When reading, a client waits for responses from a majority with their local values and versions and returns the value with the largest version.</p>
+<p>This just leaves one problem: what if two different clients write different values with the same version?
+Then, a client trying to read the value stored in the distributed register might see <span class="arithmatex">\((v_1, 3)\)</span> and <span class="arithmatex">\((v_2, 3)\)</span> (where <span class="arithmatex">\(v_1 \ne v_2\)</span>) in the set of responses it receives.
+We haven't solved the problems with the naïve approach at all!</p>
+<p>In order to fix this problem fully, we will need to give each client a unique set of versions to use.
+To that end, we will assume that each client has a unique "name"; this could be an IP address, the MAC address for its network card, a name provisioned by the system administrator, or a (very large) randomly generated number.</p>
+<p>Versions will be tuples consisting of a version number &ndash; which is just a natural number &ndash; and the client's unique name.
+For example: if we have three clients with unique names <span class="arithmatex">\(\texttt{client1}\)</span>, <span class="arithmatex">\(\texttt{client2}\)</span>, and <span class="arithmatex">\(\texttt{client3}\)</span>, <span class="arithmatex">\(\texttt{client1}\)</span> would use the versions <span class="arithmatex">\((1, \texttt{client1})\)</span>, <span class="arithmatex">\((2, \texttt{client1})\)</span>, <span class="arithmatex">\(\ldots\)</span>.
+These tuples are compared lexicographically; so <span class="arithmatex">\((2, \texttt{client1}) &gt; (1, \texttt{client2})\)</span>.
+Assuming that <span class="arithmatex">\(\texttt{client2} &gt; \texttt{client1}\)</span>, <span class="arithmatex">\((2, \texttt{client2}) &gt; (2, \texttt{client1})\)</span>.
+It doesn't matter how the clients' names are ordered, as long as they are totally ordered.
+Here, we're just comparing the clients' unique names as strings.</p>
+<p>Now, using our version tuples, clients can always choose between the values they see when reading from the distributed register.
+Similarly, servers can make sure that they only store the <em>latest</em> version/value.
+Our protocol now looks like this:
+<pre class="highlight"><code>Protocol</code></pre></p>
+<h3 id="ensuring-linearizability">Ensuring Linearizability</h3>
+<p>We still have a problem with our writing protocol, though!
+Each client maintains its own local version number, and there's no guarantee that a client will write using a version that is larger than the version currently stored in the distributed register.
+If one client writes <span class="arithmatex">\(v_1\)</span> and then after that write is complete, another client writes <span class="arithmatex">\(v_2\)</span>, a client that reads the value of the register after the write of <span class="arithmatex">\(v_2\)</span> completes <em>must</em> return <span class="arithmatex">\(v_2\)</span>.</p>
+<pre class="highlight"><code>DIAGRAM HERE SHOWING THE THREE OPERATIONS ON A TIMELINE</code></pre>
+<p>In order to fix this, we need to make sure that the write protocol first discovers the latest version written to the distributed register and then writes its value using a version that is strictly larger.
+When writing, the client will first read the versions stored at a quorum.
+It will take the largest version number it received from any server, increment it, and use its own name to create a version tuple that is guaranteed to be larger than any value that was previously written.</p>
+<p>We are almost done.
+There is one last problem with this protocol, and it is the exact same problem that we saw with the add-only set!
+Namely, if a client reads a value that is currently in the process of being written to a majority, there is no guarantee that a later client will read a value as fresh.
+This would again violate linearizability.</p>
+<p>We can fix the problem with the reading protocol with the exact same technique we used previously.
+We will add an extra phase to the reading protocol in which the client writes the value it read to a quorum.<sup id="fnref:skipping-writeback-phase"><a class="footnote-ref" href="#fn:skipping-writeback-phase">2</a></sup>
+Importantly, the client sends this value to the servers using the version it observed when reading from the quorum.
+We aren't trying to write the value anew; we're merely ensuring that knowledge of the latest value and version we read is present at a quorum of servers.</p>
+<p>With this fix in place, the protocol is actually complete!
+Now, the <span class="arithmatex">\(\texttt{read}\)</span> and <span class="arithmatex">\(\texttt{write}\)</span> protocols look remarkably similar.
+Both protocols consist of two phases.
+They start by reading the current value/version stored at a quorum, and then they write a value and version to the quorum.
+The <span class="arithmatex">\(\texttt{read}\)</span> protocol writes the largest version and value it saw in the first phase.
+The <span class="arithmatex">\(\texttt{write}\)</span> protocol writes its input value to a quorum, using a version that is larger than any it saw in the first phase.</p>
+<pre class="highlight"><code>Final protocol</code></pre>
+<h3 id="correctness">Correctness</h3>
+<p>In order to show that this protocol guarantees linearizability, we need to show that <em>any</em> execution produced by our protocol is equivalent to some sequential execution of operations that is compatible with the real-time ordering of input and output operations.
+In this case, constructing sequential execution is very simple: given an execution of our protocol, we arrange all operations according to the <em>version</em> observed in the distributed execution.
+For <span class="arithmatex">\(\texttt{write}\)</span> operations, this is the version that the client used to write the value to the distributed register.
+For <span class="arithmatex">\(\texttt{read}\)</span> operations, this is the version of the value that the client read.
+Furthermore, we will order a <span class="arithmatex">\(\texttt{write}\)</span> before all <span class="arithmatex">\(\texttt{read}\)</span>s for the same version.
+<span class="arithmatex">\(\texttt{read}\)</span>s which read the same version can be ordered arbitrarily; we will order them according to their start time.</p>
+<pre class="highlight"><code>Two diagrams.
+One showing various operations at different clients with overlapping durations (along with their read/write values).
+Another showing the linearization of those events. (Just a list)</code></pre>
+<p>Certainly, this sequential execution produces the exact same results that our distributed execution did.
+All that we need to show is that this ordering of operations is compatible with the real-time ordering of events as they actually happened.
+This argument is straight-forward and relies on quorum intersection.</p>
+<p>Suppose there exist two operations <span class="arithmatex">\(o_1\)</span> and <span class="arithmatex">\(o_2\)</span> where <span class="arithmatex">\(o_1\)</span> appears before <span class="arithmatex">\(o_2\)</span> in our manufactured sequential execution, but during the actual distributed execution <span class="arithmatex">\(o_2\)</span> finished before <span class="arithmatex">\(o_1\)</span> began.
+We will show that this leads to a contradiction.
+Because <span class="arithmatex">\(o_2\)</span> appears after <span class="arithmatex">\(o_1\)</span> in our total order of events, it must have a version at least as large as <span class="arithmatex">\(o_1\)</span>.
+Because <span class="arithmatex">\(o_2\)</span> completed before <span class="arithmatex">\(o_1\)</span> began, <span class="arithmatex">\(o_2\)</span> cannot have a larger version than <span class="arithmatex">\(o_1\)</span>. During the second phase of the protocol, clients ensure that their version is sent to a quorum.
+During the first phase of the protocol, clients read the version from a quorum, and the version for the operation will ultimately be at least that large.
+Therefore, <span class="arithmatex">\(o_1\)</span> must have a version at least as large as <span class="arithmatex">\(o_2\)</span>, and so both operations have the same version.</p>
+<p>There are now four cases we need to consider: (1) <span class="arithmatex">\(o_1\)</span> and <span class="arithmatex">\(o_2\)</span> are both <span class="arithmatex">\(\texttt{write}\)</span> operations, (2) <span class="arithmatex">\(o_1\)</span> is a <span class="arithmatex">\(\texttt{write}\)</span> and <span class="arithmatex">\(o_2\)</span> is a <span class="arithmatex">\(\texttt{read}\)</span>, (3) <span class="arithmatex">\(o_1\)</span> is a <span class="arithmatex">\(\texttt{read}\)</span> and <span class="arithmatex">\(o_2\)</span> is a <span class="arithmatex">\(\texttt{write}\)</span>, and (4) <span class="arithmatex">\(o_1\)</span> and <span class="arithmatex">\(o_2\)</span> are both <span class="arithmatex">\(\texttt{read}\)</span>s.
+The first case is impossible; each client has its own set of versions to use and ensures that it does not reuse versions.
+The second case is also not possible; the client would have to read a version which hadn't begun to be written.
+The third case is impossible because our total ordering was constructed with <span class="arithmatex">\(\texttt{write}s\)</span> preceding <span class="arithmatex">\(\texttt{read}\)</span>s with the same version.
+The final case is also impossible because our total ordering was constructed with <span class="arithmatex">\(\texttt{read}\)</span>s ordered by their start time, contradicting the assumption that <span class="arithmatex">\(o_2\)</span> completed before <span class="arithmatex">\(o_1\)</span>.</p>
+<p>Therefore, we have arrived at a contradiction and our constructed sequential ordering of events is actually compatible with the real-time ordering of events observed during the distributed execution.</p>
+<div class="admonition todo">
+<p class="admonition-title">Todo</p>
+<p>This doesn't handle operations that haven't completed, or where the client failed.</p>
+</div>
+<h2 id="discussion">Discussion</h2>
+<p>In this chapter, we saw protocols for implementing two different fault-tolerant distributed objects: and add-only set and a register.
+Both of these protocols utilized <strong>quorums</strong> to read and write information to a distributed object in a way that is fault-tolerant.
+Because we used majority quorums, we could tolerate the failure of a minority of servers.
+Moreover, both protocols guaranteed linearizability in all circumstances, no matter how many servers fail.
+The distributed register protocol used <strong>versions</strong> to establish an ordering between overlapping operations.</p>
+<p>The distributed register protocol we saw is actually a well-known protocol due to Attiya, Bar-Noy, and Dolev, usually referred to as the ABD protocol [1].</p>
+<p>Interestingly, the protocols we built in this chapter were all strictly <em>client-coordinated</em>.
+That is, there was no server to server communication.
+This will not be the case for many other distributed protocols we see in this book.
+The protocols we saw in this chapter also executed in bounded number of rounds of communication with a quorum of servers.</p>
+<div class="footnote">
+<hr />
+<ol>
+<li id="fn:finishes-executing">
+<p>The result of <span class="arithmatex">\(\texttt{contains}(e_0)\)</span> will be <span class="arithmatex">\(\texttt{true}\)</span> if execution completes.
+                   Put another way: the only value that the <span class="arithmatex">\(\texttt{contains}(e_0)\)</span> in question can return is <span class="arithmatex">\(\texttt{true}\)</span>.&#160;<a class="footnote-backref" href="#fnref:finishes-executing" title="Jump back to footnote 1 in the text">&#8617;</a></p>
+</li>
+<li id="fn:skipping-writeback-phase">
+<p>Again, this second phase can be skipped if the client saw that the value and version it read were already present at a quorum of servers.&#160;<a class="footnote-backref" href="#fnref:skipping-writeback-phase" title="Jump back to footnote 2 in the text">&#8617;</a></p>
+</li>
+</ol>
+</div>
+
+  
+          
+          <div class="bibliography"><h2>References</h2><ol><li><span class="author">Attiya, Hagit and Bar-Noy, Amotz and Dolev, Danny.</span> <span class="title">Sharing Memory Robustly in Message-Passing Systems.</span> <span class="journal">J. ACM.</span> <span class="year">1995.</span> </ol></div>
+        </div>
+        <footer id="bottom-bar">
+          
+            <a class="left" href="/book/primary-backup.html" title="Primary-Backup Replication"><i class="fa-solid fa-left-long"></i></a>
+          
+          
+            <a class="right" href="/book/consensus.html" title="Consensus and State Machine Replication"><i class="right fa-solid fa-right-long"></i></a>
+          
+        </footer>
+      </div>
+    </div>
+  </body>
+</html>
