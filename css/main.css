@@ -1,0 +1,445 @@
+/* Shared colors and styles. */
+:root {
+  --primary-color: #4b2e83; /* UW "Spirit Purple." */
+  --text-color: #555;
+  --background-color: #fdfdfd;
+  --light-text-color: var(--background-color);
+  --link-color: #2a7ae2;
+  --visited-link-color: #1756a9;
+  --scrollbar-color: #8b8b8b;
+  --scrollbar-active-color: #636363;
+
+  --sidebar-preferred-width: 325px;
+  --sidebar-width: min(var(--sidebar-preferred-width), 75vw);
+  --top-bar-height: 50px;
+}
+
+/* TODO: Organize these rules better (i.e., place layout rules together, style rules together, etc.) */
+
+/* Layout */
+body, #main-column {
+  overflow-x: clip;
+}
+
+#main-column > header#top-bar {
+  position: sticky;
+  top: 0;
+  height: var(--top-bar-height);
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  width: 100%;
+  z-index: 1000;
+  background-color: var(--background-color);
+  padding: 10px 20px;
+  box-sizing: content-box;
+
+  h1.book-title {
+    display: inline-block;
+    font-size: 28px;
+    font-weight: 200;
+    text-align: center;
+    margin: 0;
+    flex: 1;
+    flex-basis: 0%;
+    white-space: nowrap;
+    line-height: var(--top-bar-height);
+    text-overflow: ellipsis;
+    overflow: hidden;
+    a {
+      color: inherit;
+      text-decoration: inherit;
+    }
+  }
+
+  #sidebar-button {
+    display: inline-block;
+    cursor: pointer;
+    padding-right: 10px;;
+  }
+
+  /* Applied to the sticky header when the main content is scrolled down. */
+  &.scrolled {
+    border-bottom: 2px solid #e0e0e0;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+  }
+}
+
+#main-column footer#bottom-bar {
+  display: flex;
+  flex-direction: row;
+  box-sizing: content-box;
+  width: auto;
+  margin-left: min(125px, 10vw);
+  margin-right: min(125px, 10vw);
+  margin-bottom: min(40px, 3vh);
+  i {
+    color: color-mix(in srgb, var(--primary-color) 65%, white);
+    font-size: 40px;
+    padding-top: 10px;
+    padding-bottom: 10px;
+  }
+  .left {
+    margin-right: auto;
+  }
+  .right {
+    margin-left: auto;
+  }
+}
+
+#content {
+  margin: auto;
+  max-width: 760px;
+  padding: 0px 20px;
+}
+
+/* Navigation sidebar */
+#sidebar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  box-sizing: border-box;
+  width: var(--sidebar-width);
+  padding-right: 30px;
+  height: 100vh;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+
+  font-weight: 500;
+  --nav-color: color-mix(in srgb, var(--background-color) 98.5%, black 1.5%);
+  background-color: var(--nav-color);
+  scrollbar-color: var(--scrollbar-color) transparent;
+
+  a {
+    color: var(--text-color);
+    &:hover {
+      color: #2a7ae2;
+      text-decoration-color: #2a7ae2 !important;
+      text-decoration: none;
+    }
+  }
+
+  /* These are the markdown-generated TOC for each chapter. */
+  .toc {
+    border-inline-start: 4px solid
+      color-mix(in srgb, white 20%, var(--primary-color));
+    ul,
+    ol {
+      list-style: none;
+      padding-left: 20px;
+    }
+    li {
+      margin-top: 0.1em;
+    }
+    a.active {
+      text-decoration: underline;
+      text-decoration-color: color-mix(in srgb, white 20%, var(--primary-color));
+    }
+  }
+
+  .sidebar-section {
+    margin-top: 1em;
+    margin-bottom: 1em;
+    .sidebar-section-header {
+      font-weight: bold;
+      margin-left: -15px;
+    }
+  }
+}
+
+/* Sidebar collapsing. */
+#sidebar {
+  transition: transform 0.25s ease;
+  html.sidebar-collapsed & {
+    transform: translateX(calc(-1 * var(--sidebar-width)));
+  }
+}
+
+#main-column {
+  @media (max-width: 991px) {
+    transition: transform 0.25s ease;
+    transform: translateX(calc(var(--sidebar-width)));
+    html.sidebar-collapsed & {
+      transform: none;
+    }
+  }
+  @media (min-width: 992px) {
+    margin-left: var(--sidebar-width);
+    transition: margin 0.25s ease;
+    html.sidebar-collapsed & {
+      margin-left: 0;
+    }
+  }
+}
+
+/* Basic styling */
+body {
+  font:
+    400 16px/1.5 "Source Sans Pro",
+    "Helvetica Neue",
+    Helvetica,
+    Arial,
+    sans-serif;
+  color: var(--text-color);
+  background-color: var(--background-color);
+  -webkit-text-size-adjust: 100%;
+  -webkit-font-feature-settings: "kern" 1;
+  -moz-font-feature-settings: "kern" 1;
+  -o-font-feature-settings: "kern" 1;
+  font-feature-settings: "kern" 1;
+  font-kerning: normal;
+}
+
+/* Reset table styles. */
+table {
+  border-collapse: collapse;
+  border-spacing: 0;
+}
+td,
+th {
+  padding: 0;
+}
+
+/* Headings */
+h1, h2, h3, h4, h5, h6 {
+  color: var(--primary-color);
+
+  /* Make sure the heading is visible after clicking a link (add padding from top bar). */
+  scroll-margin-top: calc(var(--top-bar-height) + 20px);
+}
+
+.subtitle {
+  font-size: 22;
+  margin-top: -0.5em;
+  margin-bottom: 1em;
+  color: color-mix(in srgb, white 30%, var(--text-color));
+}
+
+.author-block {
+  font-style: italic;
+}
+
+/* Images */
+img {
+  max-width: 100%;
+  vertical-align: middle;
+}
+
+/* Figures */
+.figure-container {
+  width: 95%;
+  max-width: 100%;
+  display: block;
+}
+
+figure > img {
+  display: block;
+}
+
+figcaption {
+  font-size: 14px;
+}
+
+/* Lists */
+span.li-header {
+  font-weight: bold;
+}
+
+/* Links */
+a {
+  color: var(--link-color);
+  text-decoration: none;
+}
+a:visited {
+  color: var(--visited-link-color);
+}
+a:hover {
+  text-decoration: underline;
+}
+
+/* Blockquotes */
+blockquote {
+  color: #828282;
+  border-left: 4px solid #e8e8e8;
+  padding-left: 15px;
+  font-size: 18px;
+  letter-spacing: -1px;
+  font-style: italic;
+}
+blockquote > :last-child {
+  margin-bottom: 0;
+}
+
+/* Callout boxes. */
+.admonition {
+  --header-color: color-mix(in srgb, white 20%, var(--primary-color));
+  background-color: color-mix(in srgb, white 93%, var(--primary-color));
+  border-radius: 10px;
+  border: solid 2px var(--header-color);
+  width: 95%;
+  margin-left: auto;
+  margin-right: auto;
+  margin-bottom: 1em;
+  padding-bottom: 0.5rem;
+  overflow: hidden;
+
+  .admonition-title {
+    font-weight: bold;
+    font-size: 120%;
+    border-top-left-radius: 6px;
+    padding: 0.5rem 1rem;
+    color: var(--light-text-color);
+    background-color: var(--header-color);
+    margin: 0 0 0.5rem 0;
+  }
+
+  p {
+    margin: 0 0 0.5rem 0;
+    padding: 0 1rem 0 1rem;
+    color: var(--text-color);
+  }
+
+  &.collapsible {
+    --header-color: color-mix(in srgb, white 40%, var(--primary-color));
+    transition: max-height 0.25s ease-in-out;
+    box-sizing: border-box;
+    &:has(.admonition-title:hover) {
+      --header-color: color-mix(in srgb, white 20%, var(--primary-color));
+    }
+    .admonition-title {
+      cursor: pointer;
+      &:hover {
+        --header-color: color-mix(in srgb, white 20%, var(--primary-color));
+      }
+      &::before {
+        display: inline-block;
+        transform: rotate(90deg);
+        transition: transform 0.25s ease-in-out;
+        content: "\25B6\FE0E";
+        margin-left: 0.5rem;
+        margin-right: 1rem;
+      }
+    }
+    &:not(.expanded) {
+      .admonition-title::before {
+        transform: translateY(-0.1rem);
+      }
+    }
+    /* Hide details on startup since we can't set a max-height. */
+    &:not(.initialized) {
+      padding-bottom: 0;
+      .admonition-title {
+        margin-bottom: 0;
+      }
+      *:not(.admonition-title) {
+        display: none;
+      }
+    }
+  }
+
+  &.todo {
+    --primary-color: #991111;
+    .admonition-title {
+      text-transform: uppercase;
+    }
+  }
+}
+
+/* Margin notes. */
+:root {
+  --margin-note-width: 250px;
+}
+.marginnote {
+  font-size: 90%;
+  padding: 0.25rem;
+  color: color-mix(in srgb, white 20%, var(--text-color));
+  margin-bottom: 15px;
+}
+@media (max-width: 991px) {
+  .marginnote {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+}
+@media (min-width: 992px) {
+  .marginnote {
+    float: left;
+    clear: left;
+    text-align: right;
+    width: calc(var(--margin-note-width) - 20px);
+    margin-left: calc(0px - var(--margin-note-width));
+  }
+  #content {
+    padding-left: var(--margin-note-width);
+  }
+}
+
+/* Code formatting */
+pre,
+code {
+  font-family: "Inconsolata", monospace;
+  font-size: 100%;
+  background-color: var(--background-color);
+  color: var(--text-color);
+  word-break: break-all;
+  word-wrap: break-word;
+}
+
+pre {
+  display: block;
+  padding: 8px 12px;
+  overflow-x: auto;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+
+  code {
+    padding: 0;
+    background-color: transparent;
+    white-space: pre-wrap;
+    border: 0;
+    margin: 0;
+    border-radius: 0;
+  }
+}
+
+code.language-ascii-art {
+  line-height: 1;
+}
+
+/* References */
+.bibliography {
+  li {
+    span.title {
+      font-style: italic;
+    }
+  }
+}
+
+/* Trace visualizations */
+.trace-visualization {
+  width: 85%;
+  margin: auto;
+  svg {
+    text {
+      font-family: MJX-NCM-ZERO, MJX-NCM-N;
+      fill: var(--text-color);
+    }
+    .trace-event line {
+      stroke: var(--text-color);
+    }
+    margin-bottom: 10px;
+  }
+  .controls {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 10px;
+    margin-bottom: 10px;
+    i {
+      color: color-mix(in srgb, white 20%, var(--text-color));
+      padding-top: 5px;
+      padding-bottom: 5px;
+    }
+  }
+}
